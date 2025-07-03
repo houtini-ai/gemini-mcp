@@ -1,7 +1,6 @@
 import sys
 import os
 import subprocess
-import traceback
 
 # Method 1: Try standard user site-packages location first
 user_site = os.path.expanduser(r'~\AppData\Roaming\Python\Python313\site-packages')
@@ -27,21 +26,13 @@ try:
 except Exception:
     pass
 
-# Debug: Print Python path to stderr so we can see it in logs
-print(f"Python executable: {sys.executable}", file=sys.stderr)
-print(f"Python path: {sys.path}", file=sys.stderr)
+# Change to the server directory to ensure relative imports work
+server_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(server_dir)
 
-# Now try to import and run the server
-try:
-    print("Attempting to import server module...", file=sys.stderr)
-    import server
-    print("Server module imported successfully!", file=sys.stderr)
-except ImportError as e:
-    print(f"Failed to import server: {e}", file=sys.stderr)
-    print(f"Current sys.path: {sys.path}", file=sys.stderr)
-    traceback.print_exc(file=sys.stderr)
-    raise
-except Exception as e:
-    print(f"Unexpected error importing server: {e}", file=sys.stderr)
-    traceback.print_exc(file=sys.stderr)
-    raise
+# Now run the server as a subprocess with the proper Python path
+env = os.environ.copy()
+env['PYTHONPATH'] = ';'.join(sys.path)
+
+# Run the server script directly
+subprocess.run([sys.executable, 'server.py'], env=env)
