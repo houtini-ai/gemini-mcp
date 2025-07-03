@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """
-Gemini MCP Server
-A Model Context Protocol server for Google Gemini API.
-
-This server provides tools to interact with Google's Gemini AI models
-through the MCP (Model Context Protocol).
+Gemini MCP Server - Robust Version
+A Model Context Protocol server for Google Gemini API with better error handling.
 """
 
 import os
@@ -29,6 +26,7 @@ except ImportError:
 
 try:
     import google.generativeai as genai
+    from google.generativeai.types import HarmCategory, HarmBlockThreshold
 except ImportError:
     print("Error: google-generativeai package not installed. Please run: pip install google-generativeai", file=sys.stderr)
     sys.exit(1)
@@ -49,6 +47,24 @@ genai.configure(api_key=API_KEY)
 # Create server instance
 server = Server("gemini-mcp")
 
+# Available models
+AVAILABLE_MODELS = {
+    "gemini-2.5-flash": "Latest Gemini 2.5 Flash - Fast, versatile performance",
+    "gemini-2.0-flash": "Gemini 2.0 Flash - Fast, efficient model",
+    "gemini-1.5-flash": "Gemini 1.5 Flash - Fast, efficient model",
+    "gemini-1.5-pro": "Gemini 1.5 Pro - Advanced reasoning",
+    "gemini-pro": "Gemini Pro - Balanced performance",
+    "gemini-pro-vision": "Gemini Pro Vision - Multimodal understanding"
+}
+
+# Safety settings to minimize content blocking
+SAFETY_SETTINGS = {
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+}
+
 @server.list_tools()
 async def list_tools() -> list[Tool]:
     """List available tools."""
@@ -59,49 +75,53 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "message": {"type": "string", "description": "The message to send"},
-                    "model": {"type": "string", "default": "gemini-2.5-flash", 
-                             "description": "Model to use (e.g., gemini-2.5-flash, gemini-1.5-pro)"},
-                    "temperature": {"type": "number", "default": 0.7, "minimum": 0, "maximum": 2,
-                                   "description": "Controls randomness (0-2)"},
-                    "max_tokens": {"type": "integer", "default": 2048, "minimum": 1, "maximum": 8192,
-                                  "description": "Maximum tokens in response"},
-                    "system_prompt": {"type": "string", "description": "Optional system instruction"}
+                    "message": {
+                        "type": "string",
+                        "description": "The message to send"
+                    },
+                    "model": {
+                        "type": "string",
+                        "default": "gemini-2.5-flash",
+                        "enum": list(AVAILABLE_MODELS.keys()),
+                        "description": "Model to use"
+                    },
+                    "temperature": {
+                        "type": "number",
+                        "default": 0.7,
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Controls randomness (0.0 to 1.0)"
+                    },
+                    "max_tokens": {
+                        "type": "integer",
+                        "default": 2048,
+                        "minimum": 1,
+                        "maximum": 8192,
+                        "description": "Maximum tokens in response"
+                    },
+                    "system_prompt": {
+                        "type": "string",
+                        "description": "Optional system instruction"
+                    }
                 },
                 "required": ["message"]
             }
         ),
         Tool(
             name="gemini_list_models",
-            description="List available Gemini models and their capabilities",
+            description="List available Gemini models and their descriptions",
             inputSchema={
                 "type": "object",
                 "properties": {}
-            }
-        ),
-        Tool(
-            name="gemini_analyze_image",
-            description="Analyze an image using Gemini's vision capabilities",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "image_url": {"type": "string", "description": "URL of the image to analyze"},
-                    "prompt": {"type": "string", "default": "What's in this image?",
-                              "description": "Question or instruction about the image"},
-                    "model": {"type": "string", "default": "gemini-2.5-flash",
-                             "description": "Model to use (must support vision)"}
-                },
-                "required": ["image_url"]
             }
         )
     ]
 
 @server.call_tool()
-async def call_tool(name: str, arguments: dict) -> Sequence[TextContent]:
+async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
     """Handle tool calls."""
-    
-    if name == "gemini_chat":
-        try:
+    try:
+        if name == "gemini_chat":
             message = arguments.get("message")
             if not message:
                 raise ValueError("Message is required")
@@ -109,112 +129,98 @@ async def call_tool(name: str, arguments: dict) -> Sequence[TextContent]:
             model_name = arguments.get("model", "gemini-2.5-flash")
             temperature = arguments.get("temperature", 0.7)
             max_tokens = arguments.get("max_tokens", 2048)
-            system_prompt = arguments.get("system_prompt")
+            system_prompt = arguments.get("system_prompt", "")
             
+            # Log the request
             logger.info(f"Calling Gemini {model_name} with message: {message[:100]}...")
             
-            # Create the model
-            model = genai.GenerativeModel(
-                model_name=model_name,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": max_tokens,
-                }
-            )
-            
-            # Build the prompt
-            prompt = message
-            if system_prompt:
-                prompt = f"{system_prompt}\n\nUser: {message}"
-            
-            # Generate response
-            response = model.generate_content(prompt)
-            
-            return [TextContent(
-                type="text",
-                text=response.text
-            )]
-            
-        except Exception as e:
-            logger.error(f"Error in gemini_chat: {str(e)}")
-            return [TextContent(
-                type="text",
-                text=f"Error: {str(e)}"
-            )]
-    
-    elif name == "gemini_list_models":
-        try:
-            models_info = []
-            models_info.append("Available Gemini models:\n")
-            
-            for model in genai.list_models():
-                if 'generateContent' in model.supported_generation_methods:
-                    models_info.append(f"\n📝 {model.name}")
-                    models_info.append(f"   Display name: {model.display_name}")
-                    models_info.append(f"   Description: {model.description}")
+            try:
+                # Initialize the model
+                model = genai.GenerativeModel(
+                    model_name=model_name,
+                    safety_settings=SAFETY_SETTINGS,
+                    generation_config={
+                        "temperature": temperature,
+                        "max_output_tokens": max_tokens,
+                    }
+                )
+                
+                # Prepare the prompt
+                if system_prompt:
+                    full_prompt = f"{system_prompt}\n\nUser: {message}\n\nAssistant:"
+                else:
+                    full_prompt = message
+                
+                # Generate response
+                response = model.generate_content(full_prompt)
+                
+                # Check if response was blocked
+                if response.prompt_feedback and hasattr(response.prompt_feedback, 'block_reason'):
+                    block_reason = response.prompt_feedback.block_reason
+                    if block_reason:
+                        return [TextContent(
+                            type="text",
+                            text=f"Response was blocked by safety filters. Reason: {block_reason}. Try rephrasing your query or using different parameters."
+                        )]
+                
+                # Extract text from response
+                if hasattr(response, 'text'):
+                    response_text = response.text
+                elif hasattr(response, 'parts') and response.parts:
+                    response_text = ''.join(part.text for part in response.parts if hasattr(part, 'text'))
+                else:
+                    # Handle the case where content was filtered
+                    if hasattr(response, 'candidates') and response.candidates:
+                        candidate = response.candidates[0]
+                        if hasattr(candidate, 'finish_reason'):
+                            finish_reason = candidate.finish_reason
+                            reason_map = {
+                                1: "STOP - Natural ending",
+                                2: "SAFETY - Content was filtered",
+                                3: "MAX_TOKENS - Hit token limit",
+                                4: "UNSPECIFIED",
+                                5: "OTHER"
+                            }
+                            reason = reason_map.get(finish_reason, f"Unknown reason: {finish_reason}")
+                            return [TextContent(
+                                type="text",
+                                text=f"Response was filtered. Finish reason: {reason}\n\nTry:\n1. Rephrasing your query\n2. Using a different model\n3. Adjusting temperature settings"
+                            )]
                     
-                    if hasattr(model, 'input_token_limit'):
-                        models_info.append(f"   Input token limit: {model.input_token_limit:,}")
-                    if hasattr(model, 'output_token_limit'):
-                        models_info.append(f"   Output token limit: {model.output_token_limit:,}")
-                    
-                    models_info.append(f"   Supported methods: {', '.join(model.supported_generation_methods)}")
+                    return [TextContent(
+                        type="text",
+                        text="No text content in response. The model may have filtered the content."
+                    )]
+                
+                return [TextContent(type="text", text=response_text)]
+                
+            except Exception as e:
+                logger.error(f"Error calling Gemini: {str(e)}")
+                return [TextContent(
+                    type="text",
+                    text=f"Error generating response: {str(e)}"
+                )]
+        
+        elif name == "gemini_list_models":
+            models_info = "Available Gemini Models:\n\n"
+            for model_id, description in AVAILABLE_MODELS.items():
+                models_info += f"• **{model_id}**: {description}\n"
             
-            return [TextContent(
-                type="text",
-                text="\n".join(models_info)
-            )]
+            return [TextContent(type="text", text=models_info)]
+        
+        else:
+            raise ValueError(f"Unknown tool: {name}")
             
-        except Exception as e:
-            logger.error(f"Error listing models: {str(e)}")
-            return [TextContent(
-                type="text",
-                text=f"Error listing models: {str(e)}"
-            )]
-    
-    elif name == "gemini_analyze_image":
-        try:
-            import requests
-            from PIL import Image
-            from io import BytesIO
-            
-            image_url = arguments.get("image_url")
-            if not image_url:
-                raise ValueError("Image URL is required")
-            
-            prompt = arguments.get("prompt", "What's in this image?")
-            model_name = arguments.get("model", "gemini-2.5-flash")
-            
-            logger.info(f"Analyzing image from {image_url}")
-            
-            # Download the image
-            response = requests.get(image_url)
-            response.raise_for_status()
-            
-            # Open image with PIL
-            img = Image.open(BytesIO(response.content))
-            
-            # Create model and analyze
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content([prompt, img])
-            
-            return [TextContent(
-                type="text",
-                text=response.text
-            )]
-            
-        except Exception as e:
-            logger.error(f"Error analyzing image: {str(e)}")
-            return [TextContent(
-                type="text",
-                text=f"Error analyzing image: {str(e)}"
-            )]
-    
-    else:
-        raise ValueError(f"Unknown tool: {name}")
+    except Exception as e:
+        logger.error(f"Error in tool execution: {str(e)}")
+        return [TextContent(
+            type="text",
+            text=f"Error: {str(e)}"
+        )]
 
-async def run():
-    """Run the MCP server."""
+async def main():
+    """Run the server."""
+    logger.info("Starting Gemini MCP server...")
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
@@ -223,5 +229,4 @@ async def run():
         )
 
 if __name__ == "__main__":
-    logger.info("Starting Gemini MCP server...")
-    anyio.run(run)
+    anyio.run(main)

@@ -8,6 +8,7 @@ A Model Context Protocol (MCP) server that provides seamless integration with Go
 - 📝 **List Available Models** - Get detailed information about all available Gemini models
 - 🖼️ **Image Analysis** - Analyze images using Gemini's vision capabilities
 - 🔧 **Configurable Parameters** - Control temperature, max tokens, and system prompts
+- 🛡️ **Enhanced Error Handling** - Robust server version with better content filtering management
 - 🚀 **Easy Setup** - Simple installation and configuration process
 
 ## Installation
@@ -62,6 +63,30 @@ Add the following to your Claude Desktop configuration file:
 }
 ```
 
+### Using the Robust Server (Recommended)
+
+For better error handling and content filtering management, use `server_robust.py`:
+
+```json
+{
+  "mcpServers": {
+    "gemini": {
+      "command": "python",
+      "args": ["C:\\path\\to\\gemini-mcp\\server_robust.py"],
+      "env": {
+        "GEMINI_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+The robust server provides:
+- Enhanced error messages when content is filtered
+- Relaxed safety settings to minimize false positives
+- Better handling of various Gemini API response formats
+- Actionable suggestions when responses are blocked
+
 ## Available Tools
 
 ### gemini_chat
@@ -115,6 +140,11 @@ Analyze images using Gemini's vision capabilities.
    - Check that the path in your configuration is correct
    - Ensure Python is in your system PATH
 
+4. **"Content was filtered" errors**
+   - Use `server_robust.py` for better handling of content filtering
+   - Try rephrasing your query or using different parameters
+   - Break complex queries into smaller, more specific questions
+
 ### Debug Mode
 
 To see detailed logs, you can run the server manually:
@@ -122,6 +152,16 @@ To see detailed logs, you can run the server manually:
 set GEMINI_API_KEY=your-api-key-here
 python server.py
 ```
+
+### Testing the Server
+
+To ensure the server is working correctly, try these test queries:
+
+1. **Basic conversation**: "What is machine learning?"
+2. **Complex technical query**: "Explain the differences between transformer and LSTM architectures"
+3. **Creative writing**: "Write a short story about a robot learning to paint"
+4. **Code generation**: "Create a Python function to calculate fibonacci numbers"
+5. **Content filtering test**: If you encounter filtered content, the robust server will provide helpful feedback
 
 ## Development
 
