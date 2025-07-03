@@ -31,7 +31,7 @@ An MCP (Model Context Protocol) server that provides seamless integration betwee
 
 1. **Clone this repository**:
    ```bash
-   git clone https://github.com/yourusername/gemini-mcp.git
+   git clone https://github.com/richardbaxterseo/gemini-mcp.git
    cd gemini-mcp
    ```
 
