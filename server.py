@@ -3,7 +3,17 @@
 Gemini MCP Server - Bridge to Google's Gemini AI models
 """
 
-from fastmcp import FastMCP
+import sys
+print("Starting Gemini MCP server module...", file=sys.stderr)
+
+try:
+    from fastmcp import FastMCP
+    print("FastMCP imported successfully", file=sys.stderr)
+except ImportError as e:
+    print(f"Failed to import FastMCP: {e}", file=sys.stderr)
+    print(f"Python path: {sys.path}", file=sys.stderr)
+    raise
+
 import os
 import json
 import logging
@@ -350,8 +360,16 @@ async def gemini_generate_content(
 
 # Run the server
 if __name__ == "__main__":
-    print(f"Starting Gemini MCP server...")
-    print(f"API Key configured: {'Yes' if API_KEY else 'No'}")
+    print(f"Starting Gemini MCP server...", file=sys.stderr)
+    print(f"API Key configured: {'Yes' if API_KEY else 'No'}", file=sys.stderr)
     if API_KEY:
-        print(f"API Key prefix: {API_KEY[:10]}...")
-    mcp.run()
+        print(f"API Key prefix: {API_KEY[:10]}...", file=sys.stderr)
+    
+    try:
+        print("About to call mcp.run()...", file=sys.stderr)
+        mcp.run()
+    except Exception as e:
+        print(f"Error running MCP server: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        raise
