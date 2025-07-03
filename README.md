@@ -1,179 +1,151 @@
 # Gemini MCP Server
 
-An MCP (Model Context Protocol) server that provides seamless integration between Claude Desktop (or any MCP client) and Google's Gemini AI models.
+A Model Context Protocol (MCP) server that provides seamless integration with Google's Gemini AI models. This server allows AI assistants like Claude to interact with Gemini models for text generation, image analysis, and more.
 
 ## Features
 
-- 🚀 **Fast & Efficient**: Uses the latest Gemini 2.5 Flash model by default
-- 💬 **Text Generation**: Advanced conversational AI with system prompt support
-- 🖼️ **Vision Capabilities**: Analyze images with Gemini's multimodal models
-- 📊 **Token Management**: Count tokens before sending requests
-- 🎨 **Creative Content**: Generate stories, poems, code, and more
-- 🔍 **Model Discovery**: List all available Gemini models and their capabilities
-
-## Available Tools
-
-| Tool | Description |
-|------|-------------|
-| `gemini_chat` | Chat with Gemini models with customizable parameters |
-| `gemini_analyze_image` | Analyze images using vision-capable models |
-| `gemini_list_models` | List all available models and their specifications |
-| `gemini_count_tokens` | Count tokens in text before sending |
-| `gemini_generate_content` | Generate creative content with optimized settings |
-
-## Prerequisites
-
-- Python 3.7 or later
-- [Claude Desktop](https://www.anthropic.com/claude) or another MCP client
-- Google AI Studio API key ([Get one free](https://makersuite.google.com/app/apikey))
+- 💬 **Chat with Gemini Models** - Send messages to various Gemini models with customizable parameters
+- 📝 **List Available Models** - Get detailed information about all available Gemini models
+- 🖼️ **Image Analysis** - Analyze images using Gemini's vision capabilities
+- 🔧 **Configurable Parameters** - Control temperature, max tokens, and system prompts
+- 🚀 **Easy Setup** - Simple installation and configuration process
 
 ## Installation
 
-1. **Clone this repository**:
-   ```bash
-   git clone https://github.com/richardbaxterseo/gemini-mcp.git
-   cd gemini-mcp
-   ```
+### Prerequisites
 
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+- Python 3.7 or higher
+- A Google AI Studio API key ([Get one here](https://makersuite.google.com/app/apikey))
 
-3. **Get your API key**:
-   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Sign in with your Google account
-   - Click "Create API Key"
-   - Copy the generated key
+### Setup
 
-4. **Configure Claude Desktop**:
-   
-   Add to your Claude configuration file (`%APPDATA%\Claude\claude_desktop_config.json` on Windows):
-
-   ```json
-   {
-     "mcpServers": {
-       "gemini": {
-         "command": "python",
-         "args": ["path/to/gemini-mcp/server.py"],
-         "env": {
-           "GEMINI_API_KEY": "your-api-key-here"
-         }
-       }
-     }
-   }
-   ```
-
-   For Windows users with Python path issues, use the wrapper script:
-   ```json
-   "args": ["path/to/gemini-mcp/run_server_wrapper.py"]
-   ```
-
-5. **Restart Claude Desktop**
-
-## Usage Examples
-
-### Basic Chat
-```
-Use Gemini to explain how neural networks work in simple terms
+1. Clone the repository:
+```bash
+git clone https://github.com/richardbaxterseo/gemini-mcp.git
+cd gemini-mcp
 ```
 
-### Image Analysis
-```
-Ask Gemini to analyze this image and describe what it sees: [image URL]
-```
-
-### Creative Writing
-```
-Have Gemini write a short story about a robot learning to paint
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
 ```
 
-### Model Information
+3. Set up your API key:
+```bash
+# Windows
+set GEMINI_API_KEY=your-api-key-here
+
+# macOS/Linux
+export GEMINI_API_KEY=your-api-key-here
 ```
-Use Gemini to list available models and their capabilities
+
+## Configuration
+
+### For Claude Desktop
+
+Add the following to your Claude Desktop configuration file:
+
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "gemini": {
+      "command": "python",
+      "args": ["C:\\path\\to\\gemini-mcp\\server.py"],
+      "env": {
+        "GEMINI_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
 ```
 
-### Custom Parameters
+## Available Tools
+
+### gemini_chat
+Chat with Gemini models to generate text responses.
+
+**Parameters:**
+- `message` (required): The message to send to Gemini
+- `model` (optional): Model to use (default: "gemini-2.5-flash")
+- `temperature` (optional): Controls randomness 0-2 (default: 0.7)
+- `max_tokens` (optional): Maximum tokens in response (default: 2048)
+- `system_prompt` (optional): System instruction to guide the model
+
+**Example:**
 ```
-Ask Gemini (using temperature 0.9 and max_tokens 1000) to write a creative poem about coding
+"Can you explain quantum computing in simple terms?"
 ```
 
-## Supported Models
+### gemini_list_models
+List all available Gemini models and their capabilities.
 
-- **gemini-2.5-flash** (default) - Latest and most advanced flash model
-- **gemini-2.0-flash** - Fast model with improved capabilities
-- **gemini-1.5-flash** - Fast and versatile model
-- **gemini-1.5-pro** - Most capable model for complex tasks
-- **gemini-pro** - Legacy text generation model
-- **gemini-pro-vision** - Legacy multimodal model
+**Example:**
+```
+"Show me all available Gemini models"
+```
 
-## Configuration Options
+### gemini_analyze_image
+Analyze images using Gemini's vision capabilities.
 
-### Environment Variables
-- `GEMINI_API_KEY` (required) - Your Google AI Studio API key
+**Parameters:**
+- `image_url` (required): URL of the image to analyze
+- `prompt` (optional): Question about the image (default: "What's in this image?")
+- `model` (optional): Model to use (default: "gemini-2.5-flash")
 
-### Tool Parameters
-
-#### gemini_chat
-- `message` (required) - The message to send
-- `model` - Model to use (default: gemini-2.5-flash)
-- `temperature` - Creativity level 0.0-1.0 (default: 0.7)
-- `max_tokens` - Maximum response length (default: 2048)
-- `system_prompt` - Optional system instructions
-
-#### gemini_analyze_image
-- `image_url` (required) - URL of the image to analyze
-- `prompt` - Analysis instruction (default: "What's in this image?")
-- `model` - Vision-capable model (default: gemini-2.5-flash)
-
-## API Limits
-
-Free tier includes:
-- 60 requests per minute
-- Daily token limits
-- Access to all Gemini models
+**Example:**
+```
+"Analyze this image: https://example.com/image.jpg"
+```
 
 ## Troubleshooting
 
-### "GEMINI_API_KEY not configured"
-- Ensure the API key is in your Claude config
-- Restart Claude after configuration changes
+### Common Issues
 
-### "No module named 'fastmcp'"
-- Run `pip install fastmcp requests`
-- Check your Python installation
+1. **"GEMINI_API_KEY environment variable not set"**
+   - Make sure you've set your API key in the environment or in the Claude configuration
 
-### Rate limit errors
-- Free tier has request limits
-- Wait a minute between requests or upgrade your plan
+2. **"No module named 'mcp'"**
+   - Run `pip install -r requirements.txt` to install all dependencies
 
-### Windows-specific issues
-- Use the provided wrapper script for Python path issues
-- Ensure paths use backslashes in the config file
+3. **Server not appearing in Claude**
+   - Restart Claude Desktop after updating the configuration
+   - Check that the path in your configuration is correct
+   - Ensure Python is in your system PATH
 
-## Contributing
+### Debug Mode
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+To see detailed logs, you can run the server manually:
+```bash
+set GEMINI_API_KEY=your-api-key-here
+python server.py
+```
+
+## Development
+
+To contribute or modify the server:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see LICENSE file for details
 
 ## Acknowledgments
 
-- Built with [FastMCP](https://github.com/jlowin/fastmcp) framework
-- Powered by [Google's Gemini AI](https://ai.google.dev/)
-- Designed for [Anthropic's MCP](https://modelcontextprotocol.io/)
-
-## Security
-
-- Never commit API keys to version control
-- Always use environment variables for sensitive data
-- Keep your API keys secure and rotate them regularly
+- Built on the [Model Context Protocol](https://modelcontextprotocol.io/)
+- Uses Google's [Gemini API](https://ai.google.dev/)
+- Inspired by the MCP ecosystem
 
 ## Support
 
-For issues and questions:
+For issues, questions, or contributions:
 - Open an issue on GitHub
-- Check the [Google AI documentation](https://ai.google.dev/docs)
-- Review the [MCP documentation](https://modelcontextprotocol.io/docs)
+- Check existing issues for solutions
+- Contribute improvements via pull requests

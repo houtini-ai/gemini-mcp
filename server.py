@@ -1,375 +1,227 @@
 #!/usr/bin/env python3
 """
-Gemini MCP Server - Bridge to Google's Gemini AI models
+Gemini MCP Server
+A Model Context Protocol server for Google Gemini API.
+
+This server provides tools to interact with Google's Gemini AI models
+through the MCP (Model Context Protocol).
 """
 
+import os
 import sys
-print("Starting Gemini MCP server module...", file=sys.stderr)
+import logging
+from typing import Any, Sequence
+
+# Ensure user packages are accessible
+import site
+user_site = os.path.expanduser(os.path.join("~", "AppData", "Roaming", "Python", f"Python{sys.version_info.major}{sys.version_info.minor}", "site-packages"))
+if os.path.exists(user_site):
+    site.addsitedir(user_site)
 
 try:
-    from fastmcp import FastMCP
-    print("FastMCP imported successfully", file=sys.stderr)
-except ImportError as e:
-    print(f"Failed to import FastMCP: {e}", file=sys.stderr)
-    print(f"Python path: {sys.path}", file=sys.stderr)
-    raise
+    from mcp.server import Server
+    from mcp.server.stdio import stdio_server
+    from mcp.types import TextContent, Tool, INVALID_PARAMS, INTERNAL_ERROR
+    import anyio
+except ImportError:
+    print("Error: mcp package not installed. Please run: pip install mcp", file=sys.stderr)
+    sys.exit(1)
 
-import os
-import json
-import logging
-from typing import Optional, List, Dict, Any
-import requests
-from datetime import datetime
+try:
+    import google.generativeai as genai
+except ImportError:
+    print("Error: google-generativeai package not installed. Please run: pip install google-generativeai", file=sys.stderr)
+    sys.exit(1)
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize MCP server
-mcp = FastMCP("gemini-mcp", version="0.1.0")
-mcp.description = "MCP server for Google Gemini AI models"
-
-# Configuration
-GEMINI_API_BASE = "https://generativelanguage.googleapis.com"
-API_KEY = os.environ.get("GEMINI_API_KEY")
-
+# Configure API key
+API_KEY = os.getenv('GEMINI_API_KEY')
 if not API_KEY:
-    logger.error("GEMINI_API_KEY environment variable not set!")
+    print("Error: GEMINI_API_KEY environment variable not set", file=sys.stderr)
+    print("Please set your Gemini API key: set GEMINI_API_KEY=your-api-key-here", file=sys.stderr)
+    sys.exit(1)
 
-# Available models
-MODELS = {
-    "gemini-2.5-flash": "Latest and most advanced flash model",
-    "gemini-2.0-flash": "Fast model with improved capabilities",
-    "gemini-1.5-flash": "Fast and versatile model",
-    "gemini-1.5-pro": "Most capable model for complex tasks",
-    "gemini-pro": "Legacy model for text generation",
-    "gemini-pro-vision": "Legacy multimodal model"
-}
+genai.configure(api_key=API_KEY)
 
-@mcp.tool()
-async def gemini_chat(
-    message: str,
-    model: str = "gemini-2.5-flash",
-    temperature: float = 0.7,
-    max_tokens: int = 2048,
-    system_prompt: Optional[str] = None
-) -> str:
-    """
-    Chat with Google Gemini models.
-    
-    Args:
-        message: The message to send to Gemini
-        model: Model to use (gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro, etc.)
-        temperature: Controls randomness (0.0 to 1.0)
-        max_tokens: Maximum tokens in response
-        system_prompt: Optional system instruction
-    
-    Returns:
-        The model's response
-    """
-    if not API_KEY:
-        return "Error: GEMINI_API_KEY not configured"
-    
-    if model not in MODELS:
-        return f"Error: Invalid model '{model}'. Available models: {', '.join(MODELS.keys())}"
-    
-    try:
-        # Prepare the request
-        url = f"{GEMINI_API_BASE}/v1beta/models/{model}:generateContent"
-        
-        # Build the content
-        contents = []
-        
-        # Add system prompt if provided
-        if system_prompt:
-            contents.append({
-                "role": "user",
-                "parts": [{"text": f"System: {system_prompt}"}]
-            })
-            contents.append({
-                "role": "model",
-                "parts": [{"text": "Understood. I'll follow these instructions."}]
-            })
-        
-        # Add user message
-        contents.append({
-            "role": "user",
-            "parts": [{"text": message}]
-        })
-        
-        # Prepare request body
-        body = {
-            "contents": contents,
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_tokens,
-                "topP": 0.95,
-                "topK": 40
+# Create server instance
+server = Server("gemini-mcp")
+
+@server.list_tools()
+async def list_tools() -> list[Tool]:
+    """List available tools."""
+    return [
+        Tool(
+            name="gemini_chat",
+            description="Chat with Google Gemini models",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string", "description": "The message to send"},
+                    "model": {"type": "string", "default": "gemini-2.5-flash", 
+                             "description": "Model to use (e.g., gemini-2.5-flash, gemini-1.5-pro)"},
+                    "temperature": {"type": "number", "default": 0.7, "minimum": 0, "maximum": 2,
+                                   "description": "Controls randomness (0-2)"},
+                    "max_tokens": {"type": "integer", "default": 2048, "minimum": 1, "maximum": 8192,
+                                  "description": "Maximum tokens in response"},
+                    "system_prompt": {"type": "string", "description": "Optional system instruction"}
+                },
+                "required": ["message"]
             }
-        }
-        
-        # Make the request
-        logger.info(f"Calling Gemini {model} with message: {message[:100]}...")
-        response = requests.post(
-            url,
-            json=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-goog-api-key": API_KEY
+        ),
+        Tool(
+            name="gemini_list_models",
+            description="List available Gemini models and their capabilities",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="gemini_analyze_image",
+            description="Analyze an image using Gemini's vision capabilities",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "image_url": {"type": "string", "description": "URL of the image to analyze"},
+                    "prompt": {"type": "string", "default": "What's in this image?",
+                              "description": "Question or instruction about the image"},
+                    "model": {"type": "string", "default": "gemini-2.5-flash",
+                             "description": "Model to use (must support vision)"}
+                },
+                "required": ["image_url"]
             }
         )
-        
-        if response.status_code != 200:
-            error_msg = f"Gemini API error ({response.status_code}): {response.text}"
-            logger.error(error_msg)
-            return error_msg
-        
-        # Extract the response
-        result = response.json()
-        
-        if "candidates" in result and len(result["candidates"]) > 0:
-            candidate = result["candidates"][0]
-            if "content" in candidate and "parts" in candidate["content"]:
-                text_parts = [part["text"] for part in candidate["content"]["parts"] if "text" in part]
-                return "\n".join(text_parts)
-        
-        return "Error: No response generated"
-        
-    except Exception as e:
-        error_msg = f"Error calling Gemini: {str(e)}"
-        logger.error(error_msg)
-        return error_msg
+    ]
 
-@mcp.tool()
-async def gemini_analyze_image(
-    image_url: str,
-    prompt: str = "What's in this image?",
-    model: str = "gemini-2.5-flash"
-) -> str:
-    """
-    Analyze an image using Gemini's vision capabilities.
+@server.call_tool()
+async def call_tool(name: str, arguments: dict) -> Sequence[TextContent]:
+    """Handle tool calls."""
     
-    Args:
-        image_url: URL of the image to analyze
-        prompt: Question or instruction about the image
-        model: Model to use (must support vision)
+    if name == "gemini_chat":
+        try:
+            message = arguments.get("message")
+            if not message:
+                raise ValueError("Message is required")
+            
+            model_name = arguments.get("model", "gemini-2.5-flash")
+            temperature = arguments.get("temperature", 0.7)
+            max_tokens = arguments.get("max_tokens", 2048)
+            system_prompt = arguments.get("system_prompt")
+            
+            logger.info(f"Calling Gemini {model_name} with message: {message[:100]}...")
+            
+            # Create the model
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                generation_config={
+                    "temperature": temperature,
+                    "max_output_tokens": max_tokens,
+                }
+            )
+            
+            # Build the prompt
+            prompt = message
+            if system_prompt:
+                prompt = f"{system_prompt}\n\nUser: {message}"
+            
+            # Generate response
+            response = model.generate_content(prompt)
+            
+            return [TextContent(
+                type="text",
+                text=response.text
+            )]
+            
+        except Exception as e:
+            logger.error(f"Error in gemini_chat: {str(e)}")
+            return [TextContent(
+                type="text",
+                text=f"Error: {str(e)}"
+            )]
     
-    Returns:
-        The model's analysis of the image
-    """
-    if not API_KEY:
-        return "Error: GEMINI_API_KEY not configured"
+    elif name == "gemini_list_models":
+        try:
+            models_info = []
+            models_info.append("Available Gemini models:\n")
+            
+            for model in genai.list_models():
+                if 'generateContent' in model.supported_generation_methods:
+                    models_info.append(f"\n📝 {model.name}")
+                    models_info.append(f"   Display name: {model.display_name}")
+                    models_info.append(f"   Description: {model.description}")
+                    
+                    if hasattr(model, 'input_token_limit'):
+                        models_info.append(f"   Input token limit: {model.input_token_limit:,}")
+                    if hasattr(model, 'output_token_limit'):
+                        models_info.append(f"   Output token limit: {model.output_token_limit:,}")
+                    
+                    models_info.append(f"   Supported methods: {', '.join(model.supported_generation_methods)}")
+            
+            return [TextContent(
+                type="text",
+                text="\n".join(models_info)
+            )]
+            
+        except Exception as e:
+            logger.error(f"Error listing models: {str(e)}")
+            return [TextContent(
+                type="text",
+                text=f"Error listing models: {str(e)}"
+            )]
     
-    # Check if model supports vision
-    vision_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro-vision"]
-    if model not in vision_models:
-        return f"Error: Model '{model}' doesn't support image analysis. Use one of: {', '.join(vision_models)}"
+    elif name == "gemini_analyze_image":
+        try:
+            import requests
+            from PIL import Image
+            from io import BytesIO
+            
+            image_url = arguments.get("image_url")
+            if not image_url:
+                raise ValueError("Image URL is required")
+            
+            prompt = arguments.get("prompt", "What's in this image?")
+            model_name = arguments.get("model", "gemini-2.5-flash")
+            
+            logger.info(f"Analyzing image from {image_url}")
+            
+            # Download the image
+            response = requests.get(image_url)
+            response.raise_for_status()
+            
+            # Open image with PIL
+            img = Image.open(BytesIO(response.content))
+            
+            # Create model and analyze
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content([prompt, img])
+            
+            return [TextContent(
+                type="text",
+                text=response.text
+            )]
+            
+        except Exception as e:
+            logger.error(f"Error analyzing image: {str(e)}")
+            return [TextContent(
+                type="text",
+                text=f"Error analyzing image: {str(e)}"
+            )]
     
-    try:
-        # Download the image
-        logger.info(f"Downloading image from {image_url}")
-        image_response = requests.get(image_url)
-        
-        if image_response.status_code != 200:
-            return f"Error downloading image: {image_response.status_code}"
-        
-        # Convert to base64
-        import base64
-        image_base64 = base64.b64encode(image_response.content).decode('utf-8')
-        
-        # Determine MIME type
-        content_type = image_response.headers.get('content-type', 'image/jpeg')
-        
-        # Prepare the request
-        url = f"{GEMINI_API_BASE}/v1beta/models/{model}:generateContent"
-        
-        body = {
-            "contents": [{
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": content_type,
-                            "data": image_base64
-                        }
-                    }
-                ]
-            }]
-        }
-        
-        # Make the request
-        logger.info(f"Analyzing image with prompt: {prompt}")
-        response = requests.post(
-            url,
-            json=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-goog-api-key": API_KEY
-            }
+    else:
+        raise ValueError(f"Unknown tool: {name}")
+
+async def run():
+    """Run the MCP server."""
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(
+            read_stream,
+            write_stream,
+            server.create_initialization_options()
         )
-        
-        if response.status_code != 200:
-            error_msg = f"Gemini API error ({response.status_code}): {response.text}"
-            logger.error(error_msg)
-            return error_msg
-        
-        # Extract the response
-        result = response.json()
-        
-        if "candidates" in result and len(result["candidates"]) > 0:
-            candidate = result["candidates"][0]
-            if "content" in candidate and "parts" in candidate["content"]:
-                text_parts = [part["text"] for part in candidate["content"]["parts"] if "text" in part]
-                return "\n".join(text_parts)
-        
-        return "Error: No response generated"
-        
-    except Exception as e:
-        error_msg = f"Error analyzing image: {str(e)}"
-        logger.error(error_msg)
-        return error_msg
 
-@mcp.tool()
-async def gemini_list_models() -> str:
-    """
-    List available Gemini models and their capabilities.
-    
-    Returns:
-        Information about available models
-    """
-    if not API_KEY:
-        return "Error: GEMINI_API_KEY not configured"
-    
-    try:
-        url = f"{GEMINI_API_BASE}/v1beta/models"
-        response = requests.get(url, headers={"X-goog-api-key": API_KEY})
-        
-        if response.status_code != 200:
-            return f"Error listing models: {response.text}"
-        
-        models = response.json().get("models", [])
-        
-        # Format the response
-        result = "Available Gemini Models:\n\n"
-        
-        for model in models:
-            name = model.get("name", "").replace("models/", "")
-            display_name = model.get("displayName", name)
-            description = model.get("description", "No description available")
-            
-            # Check supported methods
-            methods = model.get("supportedGenerationMethods", [])
-            
-            result += f"**{display_name}** (`{name}`)\n"
-            result += f"  Description: {description}\n"
-            result += f"  Supported methods: {', '.join(methods)}\n"
-            
-            # Input token limit
-            if "inputTokenLimit" in model:
-                result += f"  Max input tokens: {model['inputTokenLimit']:,}\n"
-            
-            # Output token limit
-            if "outputTokenLimit" in model:
-                result += f"  Max output tokens: {model['outputTokenLimit']:,}\n"
-            
-            result += "\n"
-        
-        return result
-        
-    except Exception as e:
-        return f"Error listing models: {str(e)}"
-
-@mcp.tool()
-async def gemini_count_tokens(
-    text: str,
-    model: str = "gemini-2.5-flash"
-) -> str:
-    """
-    Count tokens for a given text using Gemini's tokenizer.
-    
-    Args:
-        text: The text to count tokens for
-        model: The model to use for tokenization
-    
-    Returns:
-        Token count information
-    """
-    if not API_KEY:
-        return "Error: GEMINI_API_KEY not configured"
-    
-    try:
-        url = f"{GEMINI_API_BASE}/v1beta/models/{model}:countTokens"
-        
-        body = {
-            "contents": [{
-                "parts": [{"text": text}]
-            }]
-        }
-        
-        response = requests.post(
-            url,
-            json=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-goog-api-key": API_KEY
-            }
-        )
-        
-        if response.status_code != 200:
-            return f"Error counting tokens: {response.text}"
-        
-        result = response.json()
-        token_count = result.get("totalTokens", 0)
-        
-        return f"Token count: {token_count:,} tokens"
-        
-    except Exception as e:
-        return f"Error counting tokens: {str(e)}"
-
-@mcp.tool()
-async def gemini_generate_content(
-    prompt: str,
-    content_type: str = "story",
-    model: str = "gemini-2.5-flash",
-    temperature: float = 0.9,
-    max_tokens: int = 4096
-) -> str:
-    """
-    Generate creative content with Gemini.
-    
-    Args:
-        prompt: The creative prompt
-        content_type: Type of content (story, poem, code, article, etc.)
-        model: Model to use
-        temperature: Creativity level (0.0 to 1.0, higher = more creative)
-        max_tokens: Maximum length of generated content
-    
-    Returns:
-        Generated creative content
-    """
-    # Add content type context to the prompt
-    enhanced_prompt = f"Please generate a {content_type} based on the following prompt:\n\n{prompt}"
-    
-    # Use higher temperature for creative content
-    return await gemini_chat(
-        message=enhanced_prompt,
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens
-    )
-
-# Run the server
 if __name__ == "__main__":
-    print(f"Starting Gemini MCP server...", file=sys.stderr)
-    print(f"API Key configured: {'Yes' if API_KEY else 'No'}", file=sys.stderr)
-    if API_KEY:
-        print(f"API Key prefix: {API_KEY[:10]}...", file=sys.stderr)
-    
-    try:
-        print("About to call mcp.run()...", file=sys.stderr)
-        mcp.run()
-    except Exception as e:
-        print(f"Error running MCP server: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        raise
+    logger.info("Starting Gemini MCP server...")
+    anyio.run(run)
