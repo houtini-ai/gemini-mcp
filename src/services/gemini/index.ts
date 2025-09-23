@@ -174,13 +174,13 @@ export class GeminiService extends BaseService {
         return false;
       }
 
-      // Test API access with a simple request
+      // Test API access with a minimal request
       const model = this.genAI.getGenerativeModel({ 
         model: this.config.defaultModel,
         safetySettings: this.mapSafetySettings()
       });
       
-      await model.generateContent('Hello, this is a test.');
+      await model.generateContent('API validation check');
       
       this.logInfo('Gemini API key validation successful');
       return true;
