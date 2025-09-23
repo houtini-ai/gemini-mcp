@@ -60,6 +60,72 @@ export class GeminiService extends BaseService {
     this.logInfo('Gemini service initialized');
   }
 
+  private addInlineCitations(text: string, groundingMetadata: any): string {
+    // Use correct field names (typos were fixed in recent SDK versions)
+    const supports = groundingMetadata.groundingSupports || [];
+    const chunks = groundingMetadata.groundingChunks || [];
+    
+    // Add comprehensive debug logging
+    this.logInfo('Grounding metadata debug', {
+      allKeys: Object.keys(groundingMetadata),
+      hasSupports: !!supports,
+      supportsLength: supports.length,
+      hasChunks: !!chunks,  
+      chunksLength: chunks.length,
+      webSearchQueries: groundingMetadata.webSearchQueries?.length || 0,
+      supportsSample: supports.length > 0 ? supports[0] : null,
+      chunksSample: chunks.length > 0 ? chunks[0] : null,
+      fullMetadata: groundingMetadata
+    });
+    
+    // Try to extract sources even if supports/chunks are empty or missing
+    // Maybe webSearchQueries alone can provide some value
+    if (groundingMetadata.webSearchQueries && groundingMetadata.webSearchQueries.length > 0) {
+      const searchInfo = `\n\nSearch queries used: ${groundingMetadata.webSearchQueries.join(', ')}`;
+      
+      if (!supports.length && !chunks.length) {
+        return text + searchInfo;
+      }
+    }
+    
+    if (!supports.length || !chunks.length) {
+      this.logInfo('No supports or chunks found - skipping citations');
+      return text;
+    }
+
+    let processedText = text;
+    const citationLinks: string[] = [];
+    const usedChunkIndices = new Set<number>();
+
+    for (const support of supports) {
+      // Use correct field name (typo was fixed in recent SDK versions)
+      const indices = support.groundingChunkIndices || [];
+      if (indices.length) {
+        for (const chunkIndex of indices) {
+          if (chunkIndex < chunks.length && !usedChunkIndices.has(chunkIndex)) {
+            const chunk = chunks[chunkIndex];
+            const uri = chunk.web?.uri;
+            if (uri) {
+              citationLinks.push(uri);
+              usedChunkIndices.add(chunkIndex);
+            }
+          }
+        }
+      }
+    }
+
+    if (citationLinks.length > 0) {
+      processedText += '\n\nSources: ' + citationLinks.map(url => `(${url})`).join(' ');
+    }
+
+    // Add search queries if available
+    if (groundingMetadata.webSearchQueries && groundingMetadata.webSearchQueries.length > 0) {
+      processedText += `\n\nSearch queries used: ${groundingMetadata.webSearchQueries.join(', ')}`;
+    }
+
+    return processedText;
+  }
+
   async chat(request: ChatRequest): Promise<ChatResponse> {
     try {
       // Determine if grounding should be used
@@ -143,8 +209,24 @@ export class GeminiService extends BaseService {
       const candidate = response.candidates?.[0];
       const groundingMetadata = candidate?.groundingMetadata;
 
+      // Debug log the grounding metadata structure
+      if (groundingMetadata) {
+        this.logInfo('Raw grounding metadata structure', {
+          keys: Object.keys(groundingMetadata),
+          webSearchQueries: groundingMetadata.webSearchQueries,
+          hasSearchQueries: !!groundingMetadata.webSearchQueries,
+          searchQueriesLength: groundingMetadata.webSearchQueries?.length || 0
+        });
+      }
+
+      // Process inline citations if grounding metadata exists
+      let processedContent = responseText;
+      if (groundingMetadata) {
+        processedContent = this.addInlineCitations(responseText, groundingMetadata);
+      }
+
       const chatResponse: ChatResponse = {
-        content: responseText,
+        content: processedContent,
         model: modelName,
         timestamp: new Date().toISOString(),
         finishReason: response.candidates?.[0]?.finishReason?.toString(),
