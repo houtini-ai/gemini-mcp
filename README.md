@@ -8,18 +8,16 @@ A professional, production-ready Model Context Protocol (MCP) server that provid
 
 ## 🚀 Quick Start
 
+The easiest way to get started is using `npx` - no installation required:
+
 ```bash
-# Install globally
-npm install -g @houtini/gemini-mcp
+# Get your API key from Google AI Studio
+# https://makersuite.google.com/app/apikey
 
-# Or install locally
-npm install @houtini/gemini-mcp
+# Test the server (optional)
+npx @houtini/gemini-mcp
 
-# Set your API key
-export GEMINI_API_KEY="your-api-key-here"
-
-# Run the server
-gemini-mcp
+# Add to Claude Desktop (see configuration below)
 ```
 
 ## 📋 Table of Contents
@@ -53,83 +51,99 @@ gemini-mcp
 
 ### Prerequisites
 
-- **Node.js** 18.0.0 or higher (you're running v24.6.0 ✅)
+- **Node.js** v24.0.0
 - **Google AI Studio API Key** ([Get your key here](https://makersuite.google.com/app/apikey))
 
-### Global Installation (Recommended)
+### Recommended: No Installation Required
+
+The simplest approach uses `npx` to run the latest version automatically:
 
 ```bash
+# No installation needed - npx handles everything
+npx @houtini/gemini-mcp
+```
+
+### Alternative Installation Methods
+
+#### Global Installation
+```bash
+# Install once, use anywhere
 npm install -g @houtini/gemini-mcp
+gemini-mcp
 ```
 
-### Local Installation
-
+#### Local Project Installation
 ```bash
+# Install in your project
 npm install @houtini/gemini-mcp
+
+# Run with npx
+npx @houtini/gemini-mcp
 ```
 
-### From Source
-
+#### From Source (Developers)
 ```bash
 git clone https://github.com/houtini-ai/gemini-mcp.git
 cd gemini-mcp
 npm install
 npm run build
+npm start
 ```
 
 ## ⚙️ Configuration
 
-### Environment Variables
+### Step 1: Get Your API Key
 
-The simplest way to configure the server is through environment variables:
+Visit [Google AI Studio](https://makersuite.google.com/app/apikey) to create your free API key.
 
-```bash
-# Required
-export GEMINI_API_KEY="your-api-key-here"
+### Step 2: Configure Claude Desktop
 
-# Optional
-export LOG_LEVEL="info"  # debug, info, warn, error
-```
-
-### Using .env File
-
-Create a `.env` file in your project directory:
-
-```env
-# Google Gemini Configuration
-GEMINI_API_KEY=your-api-key-here
-
-# Logging Configuration
-LOG_LEVEL=info
-
-# Optional server configuration
-SERVER_NAME=gemini-mcp
-SERVER_VERSION=1.0.0
-```
-
-### Claude Desktop Configuration
-
-Add to your Claude Desktop configuration file:
+Add this configuration to your Claude Desktop config file:
 
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-#### For Global Installation:
+#### ✅ Recommended Configuration (using npx)
+
 ```json
 {
   "mcpServers": {
     "gemini": {
-      "command": "gemini-mcp",
+      "command": "npx",
+      "args": ["@houtini/gemini-mcp"],
       "env": {
-        "GEMINI_API_KEY": "your-api-key-here",
-        "LOG_LEVEL": "info"
+        "GEMINI_API_KEY": "your-api-key-here"
       }
     }
   }
 }
 ```
 
-#### For Local Installation:
+**Benefits of this approach:**
+- ✅ No global installation required
+- ✅ Always uses the latest version
+- ✅ Cleaner system (no global packages)
+- ✅ Works out of the box
+
+#### Alternative: Global Installation
+
+```json
+{
+  "mcpServers": {
+    "gemini": {
+      "command": "gemini-mcp",
+      "env": {
+        "GEMINI_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+*Note: Requires `npm install -g @houtini/gemini-mcp` first*
+
+#### Alternative: Local Installation
+
 ```json
 {
   "mcpServers": {
@@ -144,19 +158,48 @@ Add to your Claude Desktop configuration file:
 }
 ```
 
-#### For Development:
+*Note: Only works if installed locally in the current directory*
+
+### Step 3: Restart Claude Desktop
+
+After updating the configuration file, restart Claude Desktop to load the new MCP server.
+
+### Optional Configuration
+
+You can add additional environment variables for more control:
+
 ```json
 {
   "mcpServers": {
     "gemini": {
-      "command": "node",
-      "args": ["C:\\path\\to\\gemini-mcp\\dist\\index.js"],
+      "command": "npx",
+      "args": ["@houtini/gemini-mcp"],
       "env": {
-        "GEMINI_API_KEY": "your-api-key-here"
+        "GEMINI_API_KEY": "your-api-key-here",
+        "LOG_LEVEL": "info"
       }
     }
   }
 }
+```
+
+**Available Environment Variables:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GEMINI_API_KEY` | *required* | Your Google AI Studio API key |
+| `LOG_LEVEL` | `info` | Logging level: `debug`, `info`, `warn`, `error` |
+
+### Using .env File (Development)
+
+For development or testing, create a `.env` file:
+
+```env
+# Google Gemini Configuration
+GEMINI_API_KEY=your-api-key-here
+
+# Logging Configuration (optional)
+LOG_LEVEL=info
 ```
 
 ## 💡 Usage Examples
@@ -321,55 +364,65 @@ The server follows a clean, layered architecture:
 
 **Solution:**
 ```bash
-export GEMINI_API_KEY="your-actual-api-key"
+# Make sure your API key is set in the Claude Desktop configuration
+# See the Configuration section above
 ```
-
-Or create a `.env` file with your API key.
 
 #### Server not appearing in Claude Desktop
 
 **Solutions:**
-1. Restart Claude Desktop after updating configuration
-2. Check that the path in your configuration is correct
-3. Ensure the built files exist in the `dist` directory
-4. Verify your API key is valid
+1. **Restart Claude Desktop** after updating configuration
+2. **Check your configuration file path**:
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+3. **Verify JSON syntax** - use a JSON validator if needed
+4. **Ensure your API key is valid** - test at [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-#### "Module not found" errors
+#### "Module not found" errors with npx
 
 **Solutions:**
 ```bash
-# Reinstall dependencies
-npm install
+# Clear npx cache and try again
+npx --yes @houtini/gemini-mcp
 
-# Rebuild the project
-npm run build
-
-# Check Node.js version (requires 18.0.0+)
-node --version
+# Or install globally if preferred
+npm install -g @houtini/gemini-mcp
 ```
 
-#### TypeScript compilation errors
+#### Node.js version issues
 
 **Solution:**
 ```bash
-# Clean and rebuild
-rm -rf dist
-npm run build
+# Check your Node.js version
+node --version
+
+# Should be v24.0.0 or higher
+# Install latest Node.js from https://nodejs.org
 ```
 
 ### Debug Mode
 
-Enable detailed logging:
+Enable detailed logging by setting `LOG_LEVEL=debug` in your Claude Desktop configuration:
 
-```bash
-export LOG_LEVEL=debug
-npm start
+```json
+{
+  "mcpServers": {
+    "gemini": {
+      "command": "npx",
+      "args": ["@houtini/gemini-mcp"],
+      "env": {
+        "GEMINI_API_KEY": "your-api-key-here",
+        "LOG_LEVEL": "debug"
+      }
+    }
+  }
+}
 ```
 
 ### Log Files
 
 Logs are written to:
-- **Console output** (stdout/stderr)
+- **Console output** (visible in Claude Desktop developer tools)
 - **`logs/combined.log`** - All log levels
 - **`logs/error.log`** - Error logs only
 
