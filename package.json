@@ -1,6 +1,6 @@
 {
   "name": "@houtini/gemini-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Professional Model Context Protocol server for Google Gemini AI models with enterprise-grade features",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -73,8 +73,8 @@
     "typescript": "^5.5.0"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
   },
   "files": [
     "dist/**/*",
