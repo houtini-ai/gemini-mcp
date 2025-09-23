@@ -27,7 +27,8 @@ export const config: Config = {
     ],
     defaultModel: 'gemini-2.5-flash',
     maxTokens: 8192,
-    temperature: 0.7
+    temperature: 0.7,
+    defaultGrounding: true
   },
   server: {
     name: 'gemini-mcp',
