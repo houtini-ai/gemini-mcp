@@ -21,9 +21,10 @@ dist/
 build/
 *.tsbuildinfo
 
-# Package files
+# Package files - IMPORTANT: Don't commit built packages
 *.tgz
 *.tar.gz
+houtini-gemini-mcp-*.tgz
 
 # Runtime data
 pids
@@ -67,7 +68,7 @@ claude_desktop_config*.json
 *API_KEY*
 secrets/
 
-# Logs
+# Logs - Don't commit log files or directories
 *.log
 logs/
 
@@ -80,3 +81,15 @@ credentials.json
 test_*
 *.test.ts
 *.spec.ts
+
+# Development helper files - Don't commit to production
+CHANGES_SUMMARY.md
+regenerate-package-lock.bat
+package-lock.json.backup
+*.backup
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
