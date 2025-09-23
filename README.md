@@ -29,7 +29,7 @@ npm install -g @mcp/gemini
 ### Install from Source
 
 ```bash
-git clone https://github.com/your-username/gemini-mcp.git
+git clone https://github.com/houtini-ai/gemini-mcp.git
 cd gemini-mcp
 npm install
 npm run build
