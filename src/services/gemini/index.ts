@@ -109,15 +109,15 @@ export class GeminiService extends BaseService {
         // Handle cases where content was filtered
         const candidate = response.candidates?.[0];
         if (candidate?.finishReason) {
-          const finishReasonMap: Record<number, string> = {
-            1: 'STOP - Natural ending',
-            2: 'SAFETY - Content was filtered',
-            3: 'MAX_TOKENS - Hit token limit',
-            4: 'UNSPECIFIED',
-            5: 'OTHER'
+          const finishReasonMap: Record<string, string> = {
+            '1': 'STOP - Natural ending',
+            '2': 'SAFETY - Content was filtered',
+            '3': 'MAX_TOKENS - Hit token limit',
+            '4': 'UNSPECIFIED',
+            '5': 'OTHER'
           };
           
-          const reason = finishReasonMap[candidate.finishReason] || 
+          const reason = finishReasonMap[candidate.finishReason.toString()] || 
                         `Unknown reason: ${candidate.finishReason}`;
           
           throw new GeminiError(
@@ -163,7 +163,7 @@ export class GeminiService extends BaseService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      await this.handleError(error as Error, 'listModels');
+      return await this.handleError(error as Error, 'listModels');
     }
   }
 

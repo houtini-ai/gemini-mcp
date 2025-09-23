@@ -53,9 +53,9 @@ export function handleError(error: Error, context?: string): McpError {
 
 export function createToolResult(success: boolean, content: string, error?: Error) {
   if (success) {
-    return [{ type: 'text', text: content }];
+    return [{ type: 'text' as const, text: content }];
   }
   
   const errorMessage = error ? handleError(error).message : content;
-  return [{ type: 'text', text: `Error: ${errorMessage}` }];
+  return [{ type: 'text' as const, text: `Error: ${errorMessage}` }];
 }
