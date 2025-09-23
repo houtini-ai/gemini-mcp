@@ -1,37 +1,46 @@
-# Gemini MCP Server
+# Gemini MCP Server (Node.js)
 
-A Model Context Protocol (MCP) server that provides seamless integration with Google's Gemini AI models. This server allows AI assistants like Claude to interact with Gemini models for text generation, image analysis, and more.
+A Model Context Protocol (MCP) server that provides seamless integration with Google's Gemini AI models. This Node.js/TypeScript implementation offers a robust, modular architecture with enhanced error handling and easy debugging capabilities.
 
 ## Features
 
 - 💬 **Chat with Gemini Models** - Send messages to various Gemini models with customizable parameters
 - 📝 **List Available Models** - Get detailed information about all available Gemini models
-- 🖼️ **Image Analysis** - Analyze images using Gemini's vision capabilities
 - 🔧 **Configurable Parameters** - Control temperature, max tokens, and system prompts
-- 🛡️ **Enhanced Error Handling** - Robust server version with better content filtering management
+- 🛡️ **Enhanced Error Handling** - Comprehensive error handling with detailed logging
+- 📦 **NPM Distribution** - Easy installation and distribution via NPM
+- 🏗️ **Modular Architecture** - Services-based design for easy debugging and extension
+- 📘 **TypeScript Support** - Full type safety and IntelliSense support
 - 🚀 **Easy Setup** - Simple installation and configuration process
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.7 or higher
+- Node.js 18.0.0 or higher
 - A Google AI Studio API key ([Get one here](https://makersuite.google.com/app/apikey))
 
-### Setup
+### Install via NPM
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/richardbaxterseo/gemini-mcp.git
+npm install -g @mcp/gemini
+```
+
+### Install from Source
+
+```bash
+git clone https://github.com/your-username/gemini-mcp.git
 cd gemini-mcp
+npm install
+npm run build
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Configuration
 
-3. Set up your API key:
+### Environment Variables
+
+Set your API key as an environment variable:
+
 ```bash
 # Windows
 set GEMINI_API_KEY=your-api-key-here
@@ -40,7 +49,12 @@ set GEMINI_API_KEY=your-api-key-here
 export GEMINI_API_KEY=your-api-key-here
 ```
 
-## Configuration
+Or create a `.env` file in your project directory:
+
+```env
+GEMINI_API_KEY=your-api-key-here
+LOG_LEVEL=info
+```
 
 ### For Claude Desktop
 
@@ -53,8 +67,8 @@ Add the following to your Claude Desktop configuration file:
 {
   "mcpServers": {
     "gemini": {
-      "command": "python",
-      "args": ["C:\\path\\to\\gemini-mcp\\server.py"],
+      "command": "node",
+      "args": ["C:\\path\\to\\gemini-mcp\\dist\\index.js"],
       "env": {
         "GEMINI_API_KEY": "your-api-key-here"
       }
@@ -63,16 +77,15 @@ Add the following to your Claude Desktop configuration file:
 }
 ```
 
-### Using the Robust Server (Recommended)
+### Using the Global NPM Installation
 
-For better error handling and content filtering management, use `server_robust.py`:
+If installed globally via NPM:
 
 ```json
 {
   "mcpServers": {
     "gemini": {
-      "command": "python",
-      "args": ["C:\\path\\to\\gemini-mcp\\server_robust.py"],
+      "command": "gemini-mcp",
       "env": {
         "GEMINI_API_KEY": "your-api-key-here"
       }
@@ -81,48 +94,108 @@ For better error handling and content filtering management, use `server_robust.p
 }
 ```
 
-The robust server provides:
-- Enhanced error messages when content is filtered
-- Relaxed safety settings to minimize false positives
-- Better handling of various Gemini API response formats
-- Actionable suggestions when responses are blocked
+## Usage
 
-## Available Tools
+### Running the Server
 
-### gemini_chat
+```bash
+# If installed globally
+gemini-mcp
+
+# If running from source
+npm run dev
+
+# If built and running locally
+npm start
+```
+
+### Available Tools
+
+#### gemini_chat
 Chat with Gemini models to generate text responses.
 
 **Parameters:**
 - `message` (required): The message to send to Gemini
 - `model` (optional): Model to use (default: "gemini-2.5-flash")
-- `temperature` (optional): Controls randomness 0-2 (default: 0.7)
+- `temperature` (optional): Controls randomness 0.0-1.0 (default: 0.7)
 - `max_tokens` (optional): Maximum tokens in response (default: 2048)
 - `system_prompt` (optional): System instruction to guide the model
 
 **Example:**
-```
-"Can you explain quantum computing in simple terms?"
+```javascript
+{
+  "message": "Explain quantum computing in simple terms",
+  "model": "gemini-2.5-flash",
+  "temperature": 0.7,
+  "max_tokens": 1000
+}
 ```
 
-### gemini_list_models
+#### gemini_list_models
 List all available Gemini models and their capabilities.
 
 **Example:**
-```
-"Show me all available Gemini models"
+```javascript
+{} // No parameters required
 ```
 
-### gemini_analyze_image
-Analyze images using Gemini's vision capabilities.
+## Available Models
 
-**Parameters:**
-- `image_url` (required): URL of the image to analyze
-- `prompt` (optional): Question about the image (default: "What's in this image?")
-- `model` (optional): Model to use (default: "gemini-2.5-flash")
+- **gemini-2.5-flash** - Latest Gemini 2.5 Flash - Fast, versatile performance
+- **gemini-2.0-flash** - Gemini 2.0 Flash - Fast, efficient model
+- **gemini-1.5-flash** - Gemini 1.5 Flash - Fast, efficient model
+- **gemini-1.5-pro** - Gemini 1.5 Pro - Advanced reasoning
+- **gemini-pro** - Gemini Pro - Balanced performance
+- **gemini-pro-vision** - Gemini Pro Vision - Multimodal understanding
 
-**Example:**
+## Architecture
+
+The server is built with a modular, services-based architecture:
+
 ```
-"Analyze this image: https://example.com/image.jpg"
+src/
+├── config/          # Configuration management
+├── services/        # Core services (Gemini integration)
+├── tools/           # MCP tool implementations
+├── utils/           # Utilities (logging, error handling)
+└── types/           # TypeScript type definitions
+```
+
+### Services
+
+- **GeminiService**: Handles all Google Gemini API interactions
+- **BaseService**: Abstract base class providing common functionality
+
+### Tools
+
+- **GeminiChatTool**: Implements the gemini_chat functionality
+- **GeminiListModelsTool**: Implements the gemini_list_models functionality
+
+## Development
+
+### Building
+
+```bash
+npm run build
+```
+
+### Development Mode
+
+```bash
+npm run dev
+```
+
+### Linting
+
+```bash
+npm run lint
+npm run lint:fix
+```
+
+### Testing
+
+```bash
+npm test
 ```
 
 ## Troubleshooting
@@ -130,58 +203,95 @@ Analyze images using Gemini's vision capabilities.
 ### Common Issues
 
 1. **"GEMINI_API_KEY environment variable not set"**
-   - Make sure you've set your API key in the environment or in the Claude configuration
+   - Make sure you've set your API key in the environment or .env file
 
-2. **"No module named 'mcp'"**
-   - Run `pip install -r requirements.txt` to install all dependencies
+2. **"Module not found" errors**
+   - Run `npm install` to install all dependencies
+   - Ensure Node.js version is 18.0.0 or higher
 
 3. **Server not appearing in Claude**
    - Restart Claude Desktop after updating the configuration
    - Check that the path in your configuration is correct
-   - Ensure Python is in your system PATH
+   - Ensure the built files exist in the `dist` directory
 
-4. **"Content was filtered" errors**
-   - Use `server_robust.py` for better handling of content filtering
-   - Try rephrasing your query or using different parameters
-   - Break complex queries into smaller, more specific questions
+4. **TypeScript compilation errors**
+   - Run `npm run build` to compile TypeScript to JavaScript
+   - Check for any TypeScript errors in the output
 
 ### Debug Mode
 
-To see detailed logs, you can run the server manually:
+To see detailed logs, set the LOG_LEVEL environment variable:
+
 ```bash
-set GEMINI_API_KEY=your-api-key-here
-python server.py
+export LOG_LEVEL=debug
+npm start
 ```
+
+Logs are written to:
+- Console output
+- `logs/combined.log` (all logs)
+- `logs/error.log` (error logs only)
 
 ### Testing the Server
 
-To ensure the server is working correctly, try these test queries:
+Test the server manually using the MCP protocol or through Claude Desktop with these queries:
 
-1. **Basic conversation**: "What is machine learning?"
-2. **Complex technical query**: "Explain the differences between transformer and LSTM architectures"
-3. **Creative writing**: "Write a short story about a robot learning to paint"
-4. **Code generation**: "Create a Python function to calculate fibonacci numbers"
-5. **Content filtering test**: If you encounter filtered content, the robust server will provide helpful feedback
+1. **List models**: "Show me all available Gemini models"
+2. **Basic chat**: "What is machine learning?"
+3. **Complex query**: "Explain the differences between transformer and LSTM architectures"
+4. **Creative writing**: "Write a short story about a robot learning to paint"
 
-## Development
+## API Reference
 
-To contribute or modify the server:
+### GeminiService Methods
+
+```typescript
+class GeminiService {
+  async chat(request: ChatRequest): Promise<ChatResponse>
+  async listModels(): Promise<ListModelsResponse>
+  async validateConfig(): Promise<boolean>
+  getAvailableModels(): string[]
+}
+```
+
+### Configuration Types
+
+```typescript
+interface GeminiConfig {
+  apiKey?: string;
+  safetySettings: SafetySetting[];
+  defaultModel: string;
+  maxTokens: number;
+  temperature: number;
+}
+```
+
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch: `git checkout -b feature/new-feature`
 3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+4. Add tests for new functionality
+5. Run the linter: `npm run lint`
+6. Build the project: `npm run build`
+7. Test your changes
+8. Commit your changes: `git commit -am 'Add new feature'`
+9. Push to the branch: `git push origin feature/new-feature`
+10. Submit a pull request
 
 ## License
 
 MIT License - see LICENSE file for details
 
-## Acknowledgments
+## Changelog
 
-- Built on the [Model Context Protocol](https://modelcontextprotocol.io/)
-- Uses Google's [Gemini API](https://ai.google.dev/)
-- Inspired by the MCP ecosystem
+### v1.0.0
+- Initial Node.js/TypeScript implementation
+- Modular services-based architecture
+- Enhanced error handling and logging
+- NPM package distribution
+- Full TypeScript support
+- Improved debugging capabilities
 
 ## Support
 
@@ -189,3 +299,10 @@ For issues, questions, or contributions:
 - Open an issue on GitHub
 - Check existing issues for solutions
 - Contribute improvements via pull requests
+
+## Acknowledgments
+
+- Built on the [Model Context Protocol](https://modelcontextprotocol.io/)
+- Uses Google's [Gemini API](https://ai.google.dev/)
+- Inspired by the MCP ecosystem
+- Migrated from Python implementation to Node.js for better NPM distribution

@@ -1,36 +1,50 @@
-# Byte-compiled / optimized / DLL files
+# Python files (legacy)
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Virtual environments
-venv/
-ENV/
-env/
-.venv
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Package files
+*.tgz
+*.tar.gz
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
 
 # IDE
 .vscode/
@@ -56,15 +70,12 @@ secrets/
 *.log
 logs/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
 # MCP specific
 wp-sites.json
 service-account-key.json
 credentials.json
 
 # Local test files
-test_*.py
+test_*
+*.test.ts
+*.spec.ts
