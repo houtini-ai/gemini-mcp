@@ -36,6 +36,7 @@ npx @houtini/gemini-mcp
 ### Core Functionality
 - **🤖 Multi-Model Support** - Access to 6 Gemini models including the latest Gemini 2.5 Flash
 - **💬 Chat Interface** - Advanced chat functionality with customisable parameters
+- **🌐 Google Search Grounding** - Real-time web search integration enabled by default for current information
 - **📊 Model Information** - Detailed model capabilities and specifications
 - **🎛️ Fine-Grained Control** - Temperature, token limits, and system prompts
 
@@ -238,6 +239,45 @@ Use Gemini 1.5 Pro to analyse this code and suggest improvements.
 Show me all available Gemini models and their capabilities.
 ```
 
+## 🌐 Google Search Grounding
+
+This server includes **Google Search grounding** enabled by default, providing Gemini models with real-time access to current web information. This powerful feature enhances responses with up-to-date facts, recent developments, and current events that wouldn't be available in the model's training data.
+
+### How It Works
+
+Google Search grounding automatically supplements Gemini's responses with:
+- **Real-time information** - Current news, stock prices, weather, and events
+- **Factual accuracy** - Reduces hallucinations by grounding responses in web sources  
+- **Source citations** - Provides metadata about search queries and sources used
+- **Seamless integration** - Works transparently without changing your workflow
+
+### Usage Examples
+
+Ask questions that benefit from current information:
+
+```
+What are the latest developments in renewable energy this month?
+What's the current stock price of major tech companies?
+What are the recent breakthroughs in quantum computing?
+What's happening in the 2025 climate summit?
+```
+
+### Controlling Grounding
+
+**Default behaviour**: Grounding is **enabled by default** for optimal results.
+
+**To disable grounding** for a specific request (useful for creative tasks):
+```
+Use Gemini without web search to write a fictional story about space exploration.
+```
+
+**Technical control**: When using the API directly, set `grounding: false` to disable:
+```json
+{
+  "message": "Write a creative poem about dreams",
+  "grounding": false
+}
+
 ## 🔧 API Reference
 
 ### Available Tools
@@ -255,15 +295,17 @@ Chat with Gemini models to generate text responses.
 | `temperature` | number | ❌ | 0.7 | Controls randomness (0.0-1.0) |
 | `max_tokens` | integer | ❌ | 2048 | Maximum tokens in response (1-8192) |
 | `system_prompt` | string | ❌ | - | System instruction to guide the model |
+| `grounding` | boolean | ❌ | true | Enable Google Search grounding for real-time information |
 
 **Example:**
 ```json
 {
-  "message": "Explain machine learning in simple terms",
-  "model": "gemini-1.5-pro",
+  "message": "What are the latest developments in quantum computing?",
+  "model": "gemini-1.5-pro", 
   "temperature": 0.5,
   "max_tokens": 1000,
-  "system_prompt": "You are a helpful teaching assistant. Explain concepts clearly and use analogies where appropriate."
+  "system_prompt": "You are a helpful technology expert. Provide current, factual information with sources where possible.",
+  "grounding": true
 }
 ```
 
@@ -475,6 +517,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **GitHub Discussions**: [Ask questions or share ideas](https://github.com/houtini-ai/gemini-mcp/discussions)
 
 ## 📈 Changelog
+
+### v1.0.2
+
+**Google Search Grounding**
+- Added Google Search grounding functionality enabled by default
+- Real-time web search integration for current information and facts
+- Grounding metadata in responses with source citations
+- Configurable grounding parameter in chat requests
+- Enhanced accuracy for current events, news, and factual queries
 
 ### v1.0.0
 

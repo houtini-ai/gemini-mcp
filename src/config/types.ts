@@ -9,6 +9,7 @@ export interface GeminiConfig {
   defaultModel: string;
   maxTokens: number;
   temperature: number;
+  defaultGrounding: boolean;
 }
 
 export interface ServerConfig {

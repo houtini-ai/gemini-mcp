@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, GroundingMetadata } from '@google/generative-ai';
 import { BaseService } from '../base-service';
 import { GeminiConfig } from '../../config/types';
 import { 
@@ -62,12 +62,15 @@ export class GeminiService extends BaseService {
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     try {
-      this.logInfo(`Chat request to ${request.model || this.config.defaultModel}`, {
-        messageLength: request.message.length,
-        hasSystemPrompt: !!request.systemPrompt
-      });
-
+      // Determine if grounding should be used
+      const shouldUseGrounding = request.grounding ?? this.config.defaultGrounding;
       const modelName = request.model || this.config.defaultModel;
+
+      this.logInfo(`Chat request to ${modelName}`, {
+        messageLength: request.message.length,
+        hasSystemPrompt: !!request.systemPrompt,
+        grounding: shouldUseGrounding
+      });
       
       // Configure generation parameters
       const generationConfig: GeminiGenerationConfig = {
@@ -75,12 +78,19 @@ export class GeminiService extends BaseService {
         maxOutputTokens: request.maxTokens ?? this.config.maxTokens
       };
 
-      // Initialize model with safety settings
-      const model = this.genAI.getGenerativeModel({
+      // Initialize model with safety settings and optional grounding
+      const modelConfig: any = {
         model: modelName,
         safetySettings: this.mapSafetySettings(),
         generationConfig
-      });
+      };
+
+      // Add grounding tool if enabled
+      if (shouldUseGrounding) {
+        modelConfig.tools = [{ googleSearch: {} }];
+      }
+
+      const model = this.genAI.getGenerativeModel(modelConfig);
 
       // Prepare prompt
       const prompt = request.systemPrompt 
@@ -129,17 +139,24 @@ export class GeminiService extends BaseService {
         throw new GeminiError('No text content in response. The model may have filtered the content.');
       }
 
+      // Extract grounding metadata if available
+      const candidate = response.candidates?.[0];
+      const groundingMetadata = candidate?.groundingMetadata;
+
       const chatResponse: ChatResponse = {
         content: responseText,
         model: modelName,
         timestamp: new Date().toISOString(),
-        finishReason: response.candidates?.[0]?.finishReason?.toString()
+        finishReason: response.candidates?.[0]?.finishReason?.toString(),
+        groundingMetadata
       };
 
       this.logInfo('Chat response generated successfully', {
         model: modelName,
         responseLength: responseText.length,
-        finishReason: chatResponse.finishReason
+        finishReason: chatResponse.finishReason,
+        hasGroundingMetadata: !!groundingMetadata,
+        searchQueries: groundingMetadata?.webSearchQueries?.length || 0
       });
 
       return chatResponse;

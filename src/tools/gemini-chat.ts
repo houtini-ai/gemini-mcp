@@ -40,6 +40,11 @@ export class GeminiChatTool {
           system_prompt: {
             type: 'string',
             description: 'Optional system instruction'
+          },
+          grounding: {
+            type: 'boolean',
+            default: true,
+            description: 'Enable Google Search grounding for real-time information'
           }
         },
         required: ['message']
@@ -63,7 +68,8 @@ export class GeminiChatTool {
         model: args.model,
         temperature: args.temperature,
         maxTokens: args.max_tokens,
-        systemPrompt: args.system_prompt
+        systemPrompt: args.system_prompt,
+        grounding: args.grounding
       });
 
       return createToolResult(true, response.content);
