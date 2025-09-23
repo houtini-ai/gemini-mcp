@@ -241,42 +241,100 @@ Show me all available Gemini models and their capabilities.
 
 ## 🌐 Google Search Grounding
 
-This server includes **Google Search grounding** enabled by default, providing Gemini models with real-time access to current web information. This powerful feature enhances responses with up-to-date facts, recent developments, and current events that wouldn't be available in the model's training data.
+This server includes **Google Search grounding** functionality powered by Google's real-time web search, providing Gemini models with access to current web information. This feature is **enabled by default** and significantly enhances response accuracy for questions requiring up-to-date information.
 
-### How It Works
+### ✨ Key Benefits
 
-Google Search grounding automatically supplements Gemini's responses with:
-- **Real-time information** - Current news, stock prices, weather, and events
-- **Factual accuracy** - Reduces hallucinations by grounding responses in web sources  
-- **Source citations** - Provides metadata about search queries and sources used
-- **Seamless integration** - Works transparently without changing your workflow
+- **🔄 Real-time Information** - Access to current news, events, stock prices, weather, and developments
+- **🎯 Factual Accuracy** - Reduces AI hallucinations by grounding responses in verified web sources
+- **📚 Source Citations** - Automatic citation of sources with search queries used
+- **⚡ Seamless Integration** - Works transparently without changing your existing workflow
+- **🧠 Smart Search** - AI automatically determines when to search based on query content
 
-### Usage Examples
+### How Google Search Grounding Works
 
-Ask questions that benefit from current information:
+When you ask a question that benefits from current information, the system:
 
+1. **Analyses your query** to determine if web search would improve the answer
+2. **Generates relevant search queries** automatically based on your question  
+3. **Performs Google searches** using multiple targeted queries
+4. **Processes search results** and synthesises information from multiple sources
+5. **Provides enhanced response** with inline citations and source links
+6. **Shows search metadata** including the actual queries used for transparency
+
+### 🎯 Perfect For These Use Cases
+
+**Current Events & News**
 ```
-What are the latest developments in renewable energy this month?
-What's the current stock price of major tech companies?
-What are the recent breakthroughs in quantum computing?
-What's happening in the 2025 climate summit?
+What are the latest developments in AI announced this month?
+What's happening with the 2025 climate negotiations?
+Recent breakthroughs in quantum computing research?
 ```
 
-### Controlling Grounding
-
-**Default behaviour**: Grounding is **enabled by default** for optimal results.
-
-**To disable grounding** for a specific request (useful for creative tasks):
+**Real-time Data**
 ```
-Use Gemini without web search to write a fictional story about space exploration.
+Current stock prices for major tech companies
+Today's weather forecast for London
+Latest cryptocurrency market trends
 ```
 
-**Technical control**: When using the API directly, set `grounding: false` to disable:
+**Recent Developments**
+```
+New software releases and updates this week
+Recent scientific discoveries in medicine
+Latest policy changes in renewable energy
+```
+
+**Fact Checking & Verification**
+```
+Verify recent statements about climate change
+Check the latest statistics on global internet usage
+Confirm recent merger and acquisition announcements
+```
+
+### 🎛️ Controlling Grounding Behaviour
+
+**Default Behaviour**: Grounding is **enabled by default** for optimal results and accuracy.
+
+**Disable for Creative Tasks**: When you want purely creative or hypothetical responses:
+```
+Use Gemini without web search to write a fictional story about dragons in space.
+Write a creative poem about imaginary colours that don't exist.
+```
+
+**Technical Control**: When using the API directly, use the `grounding` parameter:
+
 ```json
 {
-  "message": "Write a creative poem about dreams",
+  "message": "Write a creative story about time travel",
+  "model": "gemini-2.5-flash",
   "grounding": false
 }
+```
+
+```json
+{
+  "message": "What are the latest developments in renewable energy?",
+  "model": "gemini-2.5-flash", 
+  "grounding": true
+}
+```
+
+### 📊 Understanding Grounded Responses
+
+When grounding is active, responses include:
+
+**Source Citations**: Links to the websites used for information
+```
+Sources: (https://example.com/article1) (https://example.com/article2)
+```
+
+**Search Transparency**: The actual search queries used
+```
+Search queries used: latest AI developments 2025, OpenAI GPT-5 release, Google Gemini updates
+```
+
+**Enhanced Accuracy**: Information synthesis from multiple authoritative sources rather than relying solely on training data
 
 ## 🔧 API Reference
 
@@ -518,14 +576,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📈 Changelog
 
+### v1.0.3 (Latest)
+
+**Enhanced Google Search Grounding**
+- 🔧 Fixed grounding metadata field name issues for improved reliability
+- 🎯 Enhanced source citation processing and display
+- ✅ Verified compatibility with latest Google Generative AI SDK (v0.21.0)
+- 📝 Comprehensive grounding documentation and usage examples
+- 🐛 Resolved field naming inconsistencies in grounding response handling
+- ⚡ Improved grounding metadata debugging and error handling
+
 ### v1.0.2
 
-**Google Search Grounding**
-- Added Google Search grounding functionality enabled by default
-- Real-time web search integration for current information and facts
-- Grounding metadata in responses with source citations
-- Configurable grounding parameter in chat requests
-- Enhanced accuracy for current events, news, and factual queries
+**Google Search Grounding Introduction**
+- ✨ Added Google Search grounding functionality enabled by default
+- 🌐 Real-time web search integration for current information and facts
+- 📊 Grounding metadata in responses with source citations
+- 🎛️ Configurable grounding parameter in chat requests
+- 🎯 Enhanced accuracy for current events, news, and factual queries
 
 ### v1.0.0
 
