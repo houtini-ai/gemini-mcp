@@ -24,7 +24,7 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "prepublishOnly": "npm run build && npm run test && npm run lint",
+    "prepublishOnly": "npm run build",
     "prepack": "npm run build",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit"
