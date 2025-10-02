@@ -1,4 +1,4 @@
-import { CallToolRequestSchema, TextContent, Tool } from '@modelcontextprotocol/sdk/types.js';
+import { TextContent, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { GeminiService } from '../services/gemini';
 import { createToolResult, McpError } from '../utils/error-handler';
 import logger from '../utils/logger';
@@ -19,9 +19,9 @@ export class GeminiChatTool {
           },
           model: {
             type: 'string',
-            default: 'gemini-2.5-flash',
+            default: this.geminiService.getDefaultModel(),
             enum: this.geminiService.getAvailableModels(),
-            description: 'Model to use'
+            description: 'Model to use (defaults to latest available)'
           },
           temperature: {
             type: 'number',
@@ -32,9 +32,9 @@ export class GeminiChatTool {
           },
           max_tokens: {
             type: 'integer',
-            default: 2048,
+            default: 4096,
             minimum: 1,
-            maximum: 8192,
+            maximum: 16384,
             description: 'Maximum tokens in response'
           },
           system_prompt: {

@@ -9,18 +9,27 @@ export interface ChatRequest {
   grounding?: boolean;
 }
 
+export interface UsageMetadata {
+  promptTokenCount: number;
+  candidatesTokenCount: number;
+  totalTokenCount: number;
+  cachedContentTokenCount?: number;
+}
+
 export interface ChatResponse {
   content: string;
   model: string;
   timestamp: string;
   finishReason?: string;
   groundingMetadata?: GroundingMetadata;
+  usageMetadata?: UsageMetadata;
 }
 
 export interface ModelInfo {
   name: string;
   displayName: string;
   description: string;
+  contextWindow: number;
 }
 
 export interface ListModelsResponse {

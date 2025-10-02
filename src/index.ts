@@ -11,6 +11,7 @@ import { config, validateConfig } from './config';
 import { GeminiService } from './services/gemini';
 import { GeminiChatTool } from './tools/gemini-chat';
 import { GeminiListModelsTool } from './tools/gemini-list-models';
+import { GeminiDeepResearchTool } from './tools/gemini-deep-research';
 import logger from './utils/logger';
 import { handleError } from './utils/error-handler';
 
@@ -20,7 +21,6 @@ class GeminiMcpServer {
   private tools: Map<string, any>;
 
   constructor() {
-    // Validate configuration on startup
     try {
       validateConfig();
     } catch (error) {
@@ -28,10 +28,8 @@ class GeminiMcpServer {
       process.exit(1);
     }
 
-    // Initialize services
     this.geminiService = new GeminiService(config.gemini);
     
-    // Initialize server
     this.server = new Server(
       {
         name: config.server.name,
@@ -44,7 +42,6 @@ class GeminiMcpServer {
       }
     );
 
-    // Initialize tools
     this.tools = new Map();
     this.initializeTools();
     this.setupHandlers();
@@ -58,9 +55,11 @@ class GeminiMcpServer {
   private initializeTools(): void {
     const geminiChatTool = new GeminiChatTool(this.geminiService);
     const geminiListModelsTool = new GeminiListModelsTool(this.geminiService);
+    const geminiDeepResearchTool = new GeminiDeepResearchTool(this.geminiService);
 
     this.tools.set('gemini_chat', geminiChatTool);
     this.tools.set('gemini_list_models', geminiListModelsTool);
+    this.tools.set('gemini_deep_research', geminiDeepResearchTool);
 
     logger.info('Tools initialized', {
       toolCount: this.tools.size,
@@ -69,7 +68,6 @@ class GeminiMcpServer {
   }
 
   private setupHandlers(): void {
-    // Handle tool listing
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       logger.info('Handling list_tools request');
       
@@ -80,7 +78,6 @@ class GeminiMcpServer {
       };
     });
 
-    // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
       
@@ -124,7 +121,6 @@ class GeminiMcpServer {
 
   async start(): Promise<void> {
     try {
-      // Validate Gemini service configuration
       const isValid = await this.geminiService.validateConfig();
       if (!isValid) {
         throw new Error('Gemini API key validation failed');
@@ -147,7 +143,6 @@ class GeminiMcpServer {
   }
 }
 
-// Handle process cleanup
 process.on('SIGINT', () => {
   logger.info('Received SIGINT, shutting down gracefully...');
   process.exit(0);
@@ -168,7 +163,6 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Start the server
 async function main() {
   const server = new GeminiMcpServer();
   await server.start();

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, GroundingMetadata } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { BaseService } from '../base-service';
 import { GeminiConfig } from '../../config/types';
 import { 
@@ -13,40 +13,10 @@ import { GeminiError } from '../../utils/error-handler';
 export class GeminiService extends BaseService {
   private genAI: GoogleGenerativeAI;
   private config: GeminiConfig;
-
-  // Available models mapping
-  private readonly availableModels: ModelInfo[] = [
-    {
-      name: 'gemini-2.5-flash',
-      displayName: 'Gemini 2.5 Flash',
-      description: 'Latest Gemini 2.5 Flash - Fast, versatile performance'
-    },
-    {
-      name: 'gemini-2.0-flash',
-      displayName: 'Gemini 2.0 Flash', 
-      description: 'Gemini 2.0 Flash - Fast, efficient model'
-    },
-    {
-      name: 'gemini-1.5-flash',
-      displayName: 'Gemini 1.5 Flash',
-      description: 'Gemini 1.5 Flash - Fast, efficient model'
-    },
-    {
-      name: 'gemini-1.5-pro',
-      displayName: 'Gemini 1.5 Pro',
-      description: 'Gemini 1.5 Pro - Advanced reasoning'
-    },
-    {
-      name: 'gemini-pro',
-      displayName: 'Gemini Pro',
-      description: 'Gemini Pro - Balanced performance'
-    },
-    {
-      name: 'gemini-pro-vision',
-      displayName: 'Gemini Pro Vision',
-      description: 'Gemini Pro Vision - Multimodal understanding'
-    }
-  ];
+  private availableModels: ModelInfo[] = [];
+  private defaultModel: string;
+  private modelsInitialized: boolean = false;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(config: GeminiConfig) {
     super();
@@ -57,7 +27,181 @@ export class GeminiService extends BaseService {
     }
     
     this.genAI = new GoogleGenerativeAI(config.apiKey);
+    this.defaultModel = config.defaultModel;
+    this.availableModels = this.getFallbackModels();
+    
     this.logInfo('Gemini service initialized');
+  }
+
+  private async ensureModelsInitialized(): Promise<void> {
+    if (this.modelsInitialized) {
+      return;
+    }
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this.initializeModels();
+    await this.initializationPromise;
+    this.modelsInitialized = true;
+  }
+
+  private async initializeModels(): Promise<void> {
+    try {
+      const models = await this.fetchModelsFromAPI();
+      this.availableModels = models;
+      
+      const selectedDefault = this.selectDefaultModel(models);
+      if (selectedDefault) {
+        this.defaultModel = selectedDefault;
+      }
+      
+      this.logInfo('Models discovered from API', {
+        count: models.length,
+        defaultModel: this.defaultModel,
+        modelNames: models.map(m => m.name).slice(0, 5).join(', ') + (models.length > 5 ? '...' : '')
+      });
+    } catch (error) {
+      this.logInfo('Using fallback model list (API discovery failed)', {
+        error: (error as Error).message
+      });
+    }
+  }
+
+  private async fetchModelsFromAPI(): Promise<ModelInfo[]> {
+    try {
+      const apiKey = this.config.apiKey;
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch models: ${response.statusText}`);
+      }
+      
+      const data: any = await response.json();
+      const models: ModelInfo[] = [];
+      
+      for (const model of data.models || []) {
+        const supportedMethods = model.supportedGenerationMethods || [];
+        
+        if (supportedMethods.includes('generateContent')) {
+          const cleanName = model.name.replace('models/', '');
+          
+          models.push({
+            name: cleanName,
+            displayName: model.displayName || cleanName,
+            description: model.description || `${cleanName} model`,
+            contextWindow: model.inputTokenLimit || 32_000
+          });
+        }
+      }
+      
+      return models;
+    } catch (error) {
+      throw new GeminiError(`Failed to fetch models: ${(error as Error).message}`);
+    }
+  }
+
+  private selectDefaultModel(models: ModelInfo[]): string | null {
+    if (models.length === 0) {
+      return null;
+    }
+
+    let geminiModels = models.filter(m => 
+      m.name.toLowerCase().includes('gemini')
+    );
+
+    if (geminiModels.length === 0) {
+      return models[0].name;
+    }
+
+    // Filter out experimental/preview models unless explicitly allowed
+    if (!this.config.allowExperimentalModels) {
+      const stableModels = geminiModels.filter(m => {
+        const name = m.name.toLowerCase();
+        return !name.includes('-exp') && 
+               !name.includes('-preview') && 
+               !name.includes('experimental') &&
+               !name.includes('-thinking-');
+      });
+      
+      // Use stable models if available, otherwise fall back to all models
+      if (stableModels.length > 0) {
+        geminiModels = stableModels;
+      }
+    }
+
+    const sorted = geminiModels.sort((a, b) => {
+      const versionA = this.extractVersion(a.name);
+      const versionB = this.extractVersion(b.name);
+      
+      if (versionB !== versionA) {
+        return versionB - versionA;
+      }
+      
+      // Prefer "flash" models for speed
+      const aIsFlash = a.name.toLowerCase().includes('flash');
+      const bIsFlash = b.name.toLowerCase().includes('flash');
+      
+      if (aIsFlash && !bIsFlash) return -1;
+      if (bIsFlash && !aIsFlash) return 1;
+      
+      return 0;
+    });
+
+    return sorted[0].name;
+  }
+
+  private extractVersion(modelName: string): number {
+    const match = modelName.match(/(\d+\.?\d*)/);
+    return match ? parseFloat(match[1]) : 0;
+  }
+
+  private getFallbackModels(): ModelInfo[] {
+    return [
+      {
+        name: 'gemini-2.5-flash',
+        displayName: 'Gemini 2.5 Flash',
+        description: 'Latest Gemini 2.5 Flash - Fast, versatile performance',
+        contextWindow: 1_000_000
+      },
+      {
+        name: 'gemini-2.0-flash',
+        displayName: 'Gemini 2.0 Flash', 
+        description: 'Gemini 2.0 Flash - Fast, efficient model',
+        contextWindow: 1_000_000
+      },
+      {
+        name: 'gemini-1.5-flash',
+        displayName: 'Gemini 1.5 Flash',
+        description: 'Gemini 1.5 Flash - Fast, efficient model',
+        contextWindow: 1_000_000
+      },
+      {
+        name: 'gemini-1.5-pro',
+        displayName: 'Gemini 1.5 Pro',
+        description: 'Gemini 1.5 Pro - Advanced reasoning',
+        contextWindow: 2_000_000
+      },
+      {
+        name: 'gemini-pro',
+        displayName: 'Gemini Pro',
+        description: 'Gemini Pro - Balanced performance',
+        contextWindow: 32_000
+      },
+      {
+        name: 'gemini-pro-vision',
+        displayName: 'Gemini Pro Vision',
+        description: 'Gemini Pro Vision - Multimodal understanding',
+        contextWindow: 16_000
+      }
+    ];
+  }
+
+  getDefaultModel(): string {
+    return this.defaultModel;
   }
 
   private addInlineCitations(text: string, groundingMetadata: any): string {
@@ -128,9 +272,11 @@ export class GeminiService extends BaseService {
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     try {
+      await this.ensureModelsInitialized();
+      
       // Determine if grounding should be used
       const shouldUseGrounding = request.grounding ?? this.config.defaultGrounding;
-      const modelName = request.model || this.config.defaultModel;
+      const modelName = request.model || this.defaultModel;
 
       this.logInfo(`Chat request to ${modelName}`, {
         messageLength: request.message.length,
@@ -181,7 +327,7 @@ export class GeminiService extends BaseService {
       
       try {
         responseText = response.text();
-      } catch (error) {
+      } catch {
         // Handle cases where content was filtered
         const candidate = response.candidates?.[0];
         if (candidate?.finishReason) {
@@ -209,6 +355,9 @@ export class GeminiService extends BaseService {
       const candidate = response.candidates?.[0];
       const groundingMetadata = candidate?.groundingMetadata;
 
+      // Capture usage metadata from response
+      const usageMetadata = response.usageMetadata;
+
       // Debug log the grounding metadata structure
       if (groundingMetadata) {
         this.logInfo('Raw grounding metadata structure', {
@@ -216,6 +365,15 @@ export class GeminiService extends BaseService {
           webSearchQueries: groundingMetadata.webSearchQueries,
           hasSearchQueries: !!groundingMetadata.webSearchQueries,
           searchQueriesLength: groundingMetadata.webSearchQueries?.length || 0
+        });
+      }
+
+      // Log usage metadata
+      if (usageMetadata) {
+        this.logInfo('Token usage', {
+          promptTokens: usageMetadata.promptTokenCount,
+          candidatesTokens: usageMetadata.candidatesTokenCount,
+          totalTokens: usageMetadata.totalTokenCount
         });
       }
 
@@ -230,7 +388,8 @@ export class GeminiService extends BaseService {
         model: modelName,
         timestamp: new Date().toISOString(),
         finishReason: response.candidates?.[0]?.finishReason?.toString(),
-        groundingMetadata
+        groundingMetadata,
+        usageMetadata
       };
 
       this.logInfo('Chat response generated successfully', {
@@ -255,6 +414,8 @@ export class GeminiService extends BaseService {
 
   async listModels(): Promise<ListModelsResponse> {
     try {
+      await this.ensureModelsInitialized();
+      
       this.logInfo('Listing available models');
       
       return {
@@ -313,5 +474,10 @@ export class GeminiService extends BaseService {
 
   getAvailableModels(): string[] {
     return this.availableModels.map(model => model.name);
+  }
+
+  getModelContextWindow(modelName: string): number {
+    const model = this.availableModels.find(m => m.name === modelName);
+    return model?.contextWindow || 32_000;
   }
 }
