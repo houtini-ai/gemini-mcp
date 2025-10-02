@@ -79,6 +79,7 @@ credentials.json
 
 # Local test files
 test_*
+test-*.js
 *.test.ts
 *.spec.ts
 
@@ -87,6 +88,10 @@ CHANGES_SUMMARY.md
 regenerate-package-lock.bat
 package-lock.json.backup
 *.backup
+*.bat
+check-npm-login.bat
+publish-to-npm.bat
+cleanup-repo.bat
 
 # Temporary files
 temp/

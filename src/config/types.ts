@@ -10,6 +10,7 @@ export interface GeminiConfig {
   maxTokens: number;
   temperature: number;
   defaultGrounding: boolean;
+  allowExperimentalModels?: boolean;
 }
 
 export interface ServerConfig {

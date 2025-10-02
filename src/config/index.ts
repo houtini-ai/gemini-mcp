@@ -1,7 +1,6 @@
 import { Config } from './types';
 import * as dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
 export const config: Config = {
@@ -10,25 +9,26 @@ export const config: Config = {
     safetySettings: [
       {
         category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_NONE'
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       },
       {
         category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_NONE'
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       },
       {
         category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_NONE'
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       },
       {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_NONE'
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       }
     ],
     defaultModel: 'gemini-2.5-flash',
-    maxTokens: 8192,
+    maxTokens: 16384,
     temperature: 0.7,
-    defaultGrounding: true
+    defaultGrounding: true,
+    allowExperimentalModels: process.env.GEMINI_ALLOW_EXPERIMENTAL === 'true'
   },
   server: {
     name: 'gemini-mcp',

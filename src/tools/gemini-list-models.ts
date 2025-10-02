@@ -17,7 +17,7 @@ export class GeminiListModelsTool {
     };
   }
 
-  async execute(args: any): Promise<TextContent[]> {
+  async execute(): Promise<TextContent[]> {
     try {
       logger.info('Executing gemini_list_models tool');
 
