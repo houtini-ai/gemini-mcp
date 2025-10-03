@@ -17,7 +17,7 @@ export class GeminiDeepResearchTool {
   getDefinition(): Tool {
     return {
       name: 'gemini_deep_research',
-      description: 'Conduct deep research on complex topics using iterative multi-step analysis with Gemini. This performs multiple searches and synthesizes comprehensive research reports (takes several minutes).',
+      description: 'Conduct deep research on complex topics using iterative multi-step analysis with Gemini. This performs multiple searches and synthesizes comprehensive research reports (takes several minutes). [MCP_RECOMMENDED_TIMEOUT_MS: 900000]',
       inputSchema: {
         type: 'object',
         properties: {
