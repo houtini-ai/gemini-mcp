@@ -32,9 +32,9 @@ export class GeminiChatTool {
           },
           max_tokens: {
             type: 'integer',
-            default: 4096,
+            default: 8192,
             minimum: 1,
-            maximum: 16384,
+            maximum: 32768,
             description: 'Maximum tokens in response'
           },
           system_prompt: {
