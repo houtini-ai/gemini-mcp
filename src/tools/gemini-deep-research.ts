@@ -81,69 +81,14 @@ export class GeminiDeepResearchTool {
       }
 
       report += '## Research Process\n\n';
-      report += '*This research involves multiple iterative searches and analysis steps. Please wait...*\n\n';
+      report += `*Conducting ${maxIterations} research iteration${maxIterations > 1 ? 's' : ''} with Google Search grounding...*\n\n`;
 
       const researchSteps: ResearchStep[] = [];
       let cumulativeTokens = 0;
-
-      report += '### Step 1: Creating Research Plan\n\n';
-
-      // IMPROVED: More explicit planning prompt that forces specific queries
-      const planningPrompt = `You are a research assistant. Create a detailed research plan for this question: "${researchQuestion}"
-
-${focusAreas.length > 0 ? `Focus specifically on these areas: ${focusAreas.join(', ')}` : ''}
-
-Create EXACTLY ${maxIterations} specific, actionable research queries that will comprehensively answer this question.
-
-CRITICAL REQUIREMENTS:
-1. Each query must be self-contained and include the main topic explicitly
-2. Each query must be specific enough to guide a Google Search  
-3. Format as a numbered list: "1. [Your specific query here]"
-4. Do NOT use vague phrases like "the topic", "this aspect", or "it" - always name the specific subject
-5. Each query should be a complete question or statement that could stand alone
-
-Example format for a question about "Impact of electric vehicles on oil industry":
-1. What is the current global adoption rate of electric vehicles and projected growth through 2030?
-2. How have major oil companies' stock prices and valuations changed since 2020 in response to EV adoption?
-3. What strategic pivots are oil companies making to adapt to declining gasoline demand from EVs?
-
-Now create ${maxIterations} research queries following this format for the question: "${researchQuestion}"`;
-
-      let planResponse;
-      try {
-        planResponse = await this.geminiService.chat({
-          message: planningPrompt,
-          model: model,
-          temperature: 0.7,
-          maxTokens: 4096,
-          grounding: false
-        });
-
-        if (planResponse.usageMetadata) {
-          cumulativeTokens += planResponse.usageMetadata.totalTokenCount;
-          logger.info('Planning phase tokens', {
-            used: planResponse.usageMetadata.totalTokenCount,
-            cumulative: cumulativeTokens
-          });
-        }
-      } catch (error) {
-        logger.error('Planning phase failed', { error });
-        throw new McpError('Failed to create research plan. The question may be too complex. Try simplifying it.', 'RESEARCH_PLANNING_FAILED');
-      }
-
-      report += planResponse.content + '\n\n';
-      
-      // IMPROVED: Pass research question to extraction for better fallback
-      const researchQueries = this.extractQueries(planResponse.content, maxIterations, researchQuestion);
-
-      report += `### Step 2: Executing Research Queries\n\n`;
-      report += `*Conducting ${researchQueries.length} research iterations...*\n\n`;
-
       let consecutiveFailures = 0;
       
-      for (let i = 0; i < researchQueries.length; i++) {
-        const query = researchQueries[i];
-        
+      // Direct research iterations - just pass the question to Gemini with grounding
+      for (let i = 0; i < maxIterations; i++) {
         if (cumulativeTokens >= researchBudget) {
           logger.warn('Approaching token budget, stopping research iterations', {
             cumulative: cumulativeTokens,
@@ -153,25 +98,30 @@ Now create ${maxIterations} research queries following this format for the quest
           break;
         }
 
-        logger.info(`Research iteration ${i + 1}/${researchQueries.length}`, { 
-          query,
+        logger.info(`Research iteration ${i + 1}/${maxIterations}`, { 
           tokensUsed: cumulativeTokens,
           budget: researchBudget
         });
-        report += `#### Research Query ${i + 1}: ${query}\n\n`;
 
+        // Build the research prompt - either focused on a specific area or the full question
+        let iterationPrompt = researchQuestion;
+        if (focusAreas.length > 0 && i < focusAreas.length) {
+          iterationPrompt = `${researchQuestion}\n\nFocus specifically on: ${focusAreas[i]}`;
+          report += `### Iteration ${i + 1}: ${focusAreas[i]}\n\n`;
+        } else {
+          report += `### Iteration ${i + 1}\n\n`;
+        }
+
+        // Include context from previous research if available
         const contextContent = this.buildSmartContext(researchSteps, researchBudget - cumulativeTokens);
-
-        const searchPrompt = `Research this specific question: "${query}"
-
-${contextContent ? `Context from previous research:\n${contextContent}` : ''}
-
-Provide detailed, factual information with specific data points. Use Google Search grounding to find current information.`;
+        if (contextContent && i > 0) {
+          iterationPrompt += `\n\nContext from previous research:\n${contextContent}`;
+        }
 
         let searchResponse;
         try {
           searchResponse = await this.geminiService.chat({
-            message: searchPrompt,
+            message: iterationPrompt,
             model: model,
             temperature: 0.5,
             maxTokens: 8192,
@@ -188,14 +138,13 @@ Provide detailed, factual information with specific data points. Use Google Sear
             });
           }
 
-          // IMPROVED: Validate that grounding actually occurred
+          // Validate that grounding actually occurred
           if (searchResponse.groundingMetadata) {
             const hasSearches = (searchResponse.groundingMetadata.webSearchQueries?.length ?? 0) > 0;
             const hasSupports = (searchResponse.groundingMetadata.groundingSupports?.length ?? 0) > 0;
             
             if (!hasSearches && !hasSupports) {
               logger.warn(`Iteration ${i + 1}: Grounding enabled but no searches performed`, {
-                query,
                 responsePreview: searchResponse.content.substring(0, 200)
               });
             } else {
@@ -206,52 +155,48 @@ Provide detailed, factual information with specific data points. Use Google Sear
             }
           } else {
             logger.warn(`Iteration ${i + 1}: No grounding metadata returned`, {
-              query,
               groundingRequested: true
             });
-          }
-
-          // IMPROVED: Check for generic failure responses
-          const responsePreview = searchResponse.content.substring(0, 100).toLowerCase();
-          if (responsePreview.includes('please specify') || 
-              responsePreview.includes('i need to know') ||
-              responsePreview.includes('clarify the topic')) {
-            throw new Error('Query was too vague - received generic response requesting clarification');
           }
 
           consecutiveFailures = 0; // Reset on success
           
         } catch (error) {
           consecutiveFailures++;
-          const errorMsg = (error as Error).message;
+          const errorMessage = (error as Error).message || 'Unknown error';
           
           logger.error(`Research iteration ${i + 1} failed`, { 
-            error: errorMsg,
-            query,
+            error: errorMessage,
             consecutiveFailures
           });
 
-          // IMPROVED: Fail fast if queries are systematically failing
+          // Fail fast if queries are systematically failing
           if (consecutiveFailures >= 2 && researchSteps.length === 0) {
             throw new McpError(
-              `Multiple research queries failing consecutively. This usually means:\n` +
-              `1. The queries are too vague (missing context about "${researchQuestion}")\n` +
-              `2. Grounding/Google Search may not be available\n` +
-              `3. The topic may need to be more specific\n\n` +
-              `Last attempted query: "${query}"\n` +
-              `Error: ${errorMsg}`,
-              'RESEARCH_QUERIES_FAILING'
+              `Multiple research iterations failing consecutively.\n\n` +
+              `Error: ${errorMessage}\n\n` +
+              `This usually means:\n` +
+              `1. The question may be too broad or ambiguous\n` +
+              `2. API rate limits or quota exceeded\n` +
+              `3. Content filtering or safety blocks\n` +
+              `4. Network or connectivity issues\n\n` +
+              `Try:\n` +
+              `- Breaking the question into smaller, more specific queries\n` +
+              `- Checking your API quota and rate limits\n` +
+              `- Simplifying the research question\n` +
+              `- Waiting a few moments before retrying`,
+              'RESEARCH_ITERATIONS_FAILING'
             );
           }
 
-          report += `*Research query ${i + 1} failed: ${errorMsg}*\n\n`;
+          report += `*Iteration ${i + 1} failed: ${errorMessage}*\n\n`;
           continue;
         }
 
         const sources = this.extractSources(searchResponse.content);
         
         researchSteps.push({
-          query,
+          query: iterationPrompt,
           response: searchResponse.content,
           sources,
           usageMetadata: searchResponse.usageMetadata || {
@@ -266,69 +211,77 @@ Provide detailed, factual information with specific data points. Use Google Sear
 
       if (researchSteps.length === 0) {
         throw new McpError(
-          'All research iterations failed. Possible causes:\n' +
-          '1. Research queries were too generic\n' +
-          '2. Grounding/Google Search is not responding\n' +
-          '3. Network or API issues\n\n' +
-          'Try simplifying the question or checking your internet connection.',
+          'All research iterations failed.\n\n' +
+          'Possible causes:\n' +
+          '1. The question format may not be suitable for research\n' +
+          '2. Google Search grounding is not responding\n' +
+          '3. API rate limits or quota exceeded\n' +
+          '4. Network or connectivity issues\n\n' +
+          'Try:\n' +
+          '- Rephrasing the question more clearly\n' +
+          '- Reducing max_iterations to 3\n' +
+          '- Checking your internet connection and API status\n' +
+          '- Waiting a few minutes before retrying',
           'ALL_ITERATIONS_FAILED'
         );
       }
 
-      report += '### Step 3: Synthesizing Findings\n\n';
+      // Optional synthesis if we have multiple iterations
+      if (researchSteps.length > 1) {
+        report += '### Synthesis\n\n';
 
-      const availableForSynthesis = Math.min(
-        synthesisReserve,
-        modelContextWindow - cumulativeTokens - 10000
-      );
+        const availableForSynthesis = Math.min(
+          synthesisReserve,
+          modelContextWindow - cumulativeTokens - 10000
+        );
 
-      logger.info('Synthesis phase', {
-        tokensUsed: cumulativeTokens,
-        synthesisReserve,
-        availableForSynthesis,
-        researchStepsCompleted: researchSteps.length
-      });
-
-      const synthesisContext = this.buildSynthesisContext(researchSteps, availableForSynthesis);
-
-      const synthesisPrompt = `Based on all the research conducted, synthesize a comprehensive answer to the original question: "${researchQuestion}"
-
-Research conducted:
-${synthesisContext}
-
-Create a comprehensive synthesis that:
-1. Directly answers the research question
-2. Integrates findings from all research queries
-3. Highlights key insights and patterns
-4. Notes any contradictions or gaps
-5. Provides actionable conclusions
-
-Be thorough and well-structured.`;
-
-      let synthesisResponse;
-      try {
-        synthesisResponse = await this.geminiService.chat({
-          message: synthesisPrompt,
-          model: model,
-          temperature: 0.6,
-          maxTokens: 16384,
-          grounding: false
+        logger.info('Synthesis phase', {
+          tokensUsed: cumulativeTokens,
+          synthesisReserve,
+          availableForSynthesis,
+          researchStepsCompleted: researchSteps.length
         });
 
-        if (synthesisResponse.usageMetadata) {
-          cumulativeTokens += synthesisResponse.usageMetadata.totalTokenCount;
-          logger.info('Synthesis tokens', {
-            used: synthesisResponse.usageMetadata.totalTokenCount,
-            total: cumulativeTokens
-          });
-        }
-      } catch (error) {
-        logger.error('Synthesis phase failed', { error });
-        report += '*Note: Synthesis phase encountered an error. Individual research findings are provided above.*\n\n';
-        synthesisResponse = { content: 'Synthesis unavailable due to technical limitations. Please review the individual research findings above for insights.' };
-      }
+        const synthesisContext = this.buildSynthesisContext(researchSteps, availableForSynthesis);
 
-      report += synthesisResponse.content + '\n\n';
+        const synthesisPrompt = `Based on the research conducted, provide a comprehensive synthesis answering: "${researchQuestion}"
+
+Research findings:
+${synthesisContext}
+
+Create a synthesis that:
+1. Directly answers the research question
+2. Integrates findings from all iterations
+3. Highlights key insights and patterns
+4. Notes any contradictions or gaps
+5. Provides actionable conclusions`;
+
+        let synthesisResponse;
+        try {
+          synthesisResponse = await this.geminiService.chat({
+            message: synthesisPrompt,
+            model: model,
+            temperature: 0.6,
+            maxTokens: 16384,
+            grounding: false
+          });
+
+          if (synthesisResponse.usageMetadata) {
+            cumulativeTokens += synthesisResponse.usageMetadata.totalTokenCount;
+            logger.info('Synthesis tokens', {
+              used: synthesisResponse.usageMetadata.totalTokenCount,
+              total: cumulativeTokens
+            });
+          }
+        } catch (error) {
+          const errorMessage = (error as Error).message || 'Unknown error';
+          logger.error('Synthesis phase failed', { error: errorMessage });
+          report += `*Note: Synthesis phase encountered an error (${errorMessage}). Individual research findings are provided above.*\n\n`;
+          synthesisResponse = { content: 'Synthesis unavailable. Please review the individual research findings above.' };
+        }
+
+        report += synthesisResponse.content + '\n\n';
+      }
 
       report += '### Sources Consulted\n\n';
       const allSources = new Set<string>();
@@ -344,7 +297,7 @@ Be thorough and well-structured.`;
         report += '*Note: No external sources were cited. This may indicate grounding did not function properly.*\n';
       }
 
-      report += `\n---\n\n*Research completed with ${researchSteps.length} successful iterations using ${model}*\n`;
+      report += `\n---\n\n*Research completed with ${researchSteps.length} successful iteration${researchSteps.length > 1 ? 's' : ''} using ${model}*\n`;
       report += `*Total tokens used: ${cumulativeTokens.toLocaleString()} / ${modelContextWindow.toLocaleString()} available*\n`;
       report += `*Context window utilization: ${((cumulativeTokens / modelContextWindow) * 100).toFixed(1)}%*\n`;
 
@@ -365,9 +318,14 @@ Be thorough and well-structured.`;
         return createToolResult(false, error.message, error);
       }
       
+      const errorMessage = (error as Error).message || 'Unknown error';
       return createToolResult(
         false, 
-        `Deep research failed: ${(error as Error).message}. Try reducing max_iterations or simplifying the question.`, 
+        `Deep research failed: ${errorMessage}\n\n` +
+        `Try:\n` +
+        `- Simplifying or rephrasing the question\n` +
+        `- Reducing max_iterations\n` +
+        `- Breaking it into smaller, more focused queries`, 
         error as Error
       );
     }
@@ -384,7 +342,7 @@ Be thorough and well-structured.`;
     for (let i = steps.length - 1; i >= 0; i--) {
       const step = steps[i];
       const summaryLength = Math.min(1000, step.response.length);
-      const stepSummary = `Query ${i + 1}: ${step.query}\nKey findings: ${step.response.substring(0, summaryLength)}${summaryLength < step.response.length ? '...' : ''}\n\n`;
+      const stepSummary = `Previous finding ${i + 1}: ${step.response.substring(0, summaryLength)}${summaryLength < step.response.length ? '...' : ''}\n\n`;
       
       if (currentLength + stepSummary.length > maxChars) {
         logger.info('Context budget reached, including most recent research only', {
@@ -410,72 +368,8 @@ Be thorough and well-structured.`;
         ? step.response.substring(0, maxCharsPerStep) + '...'
         : step.response;
       
-      return `Research Query ${i + 1}: ${step.query}\nFindings: ${truncatedResponse}`;
+      return `Research Iteration ${i + 1}:\n${truncatedResponse}`;
     }).join('\n\n');
-  }
-
-  // IMPROVED: Pass research question for context-aware fallback queries
-  private extractQueries(planText: string, maxQueries: number, researchQuestion: string): string[] {
-    const queries: string[] = [];
-    const lines = planText.split('\n');
-    
-    // Try multiple patterns to extract queries
-    for (const line of lines) {
-      // Pattern 1: Standard numbered list (1. query)
-      let match = line.match(/^\d+\.\s*(.+?)(?:\s*[-:]\s*|$)/);
-      
-      // Pattern 2: Bold numbered list (**1. query**)
-      if (!match) {
-        match = line.match(/^\*\*\d+\.\s*(.+?)\*\*/);
-      }
-      
-      // Pattern 3: Query within bold markdown (**Research Query: query**)
-      if (!match) {
-        match = line.match(/\*\*Research Query:\s*(.+?)\*\*/i);
-      }
-      
-      if (match) {
-        let query = match[1].trim();
-        
-        // Remove any trailing punctuation or markdown
-        query = query.replace(/[*_]+$/, '').trim();
-        
-        // Clean up query - remove question marks at the end if very long
-        if (query.length > 200) {
-          const questionMark = query.lastIndexOf('?');
-          if (questionMark > 50) {
-            query = query.substring(0, questionMark + 1);
-          }
-        }
-        
-        if (query.length > 10 && query.length < 500) {
-          queries.push(query);
-        }
-      }
-    }
-    
-    // IMPROVED: Use context-aware fallback queries that include the research question
-    if (queries.length === 0) {
-      logger.warn('Failed to extract queries from plan, using context-aware fallback queries');
-      
-      const fallbackQueries = [
-        `Provide comprehensive overview of: ${researchQuestion}`,
-        `What are the key aspects and current trends related to: ${researchQuestion}`,
-        `What are the recent developments and changes regarding: ${researchQuestion}`,
-        `Compare different perspectives and approaches to: ${researchQuestion}`,
-        `What are the conclusions and recommendations about: ${researchQuestion}`
-      ];
-      
-      logger.info('Using fallback queries with context', {
-        researchQuestion: researchQuestion.substring(0, 100),
-        fallbackCount: fallbackQueries.length
-      });
-      
-      return fallbackQueries.slice(0, maxQueries);
-    }
-    
-    logger.info('Extracted queries from plan', { count: queries.length, queries });
-    return queries.slice(0, maxQueries);
   }
 
   private extractSources(content: string): string[] {
