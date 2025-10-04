@@ -434,13 +434,17 @@ export class GeminiService extends BaseService {
         return false;
       }
 
-      // Test API access with a minimal request
-      const model = this.genAI.getGenerativeModel({ 
-        model: this.config.defaultModel,
-        safetySettings: this.mapSafetySettings()
-      });
+      // Test API access by listing models (much faster than generateContent)
+      const apiKey = this.config.apiKey;
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
       
-      await model.generateContent('API validation check');
+      if (!response.ok) {
+        this.logError('API key validation failed: invalid response', new Error(`Status: ${response.status}`));
+        return false;
+      }
       
       this.logInfo('Gemini API key validation successful');
       return true;
