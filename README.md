@@ -1,9 +1,9 @@
 # Gemini MCP Server
 
-[![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg)](https://www.npmjs.com/package/@houtini/gemini-mcp)
-[![npm downloads](https://img.shields.io/npm/dt/@houtini/gemini-mcp.svg)](https://www.npmjs.com/package/@houtini/gemini-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](https://www.typescriptlang.org/)
+[![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@houtini/gemini-mcp)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![MCP](https://img.shields.io/badge/MCP-Compatible-green?style=flat-square)](https://modelcontextprotocol.io)
 
 A professional, production-ready Model Context Protocol (MCP) server that provides seamless integration with Google's Gemini AI models. Built with TypeScript and designed for enterprise use, this package offers robust error handling, comprehensive logging, and easy deployment.
 
