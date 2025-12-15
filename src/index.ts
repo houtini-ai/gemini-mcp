@@ -12,7 +12,6 @@ import { GeminiService } from './services/gemini';
 import { GeminiChatTool } from './tools/gemini-chat';
 import { GeminiListModelsTool } from './tools/gemini-list-models';
 import { GeminiDeepResearchTool } from './tools/gemini-deep-research';
-import { GeminiDescribeVideoTool } from './tools/gemini-describe-video';
 import logger from './utils/logger';
 import { handleError } from './utils/error-handler';
 
@@ -57,12 +56,10 @@ class GeminiMcpServer {
     const geminiChatTool = new GeminiChatTool(this.geminiService);
     const geminiListModelsTool = new GeminiListModelsTool(this.geminiService);
     const geminiDeepResearchTool = new GeminiDeepResearchTool(this.geminiService);
-    const geminiDescribeVideoTool = new GeminiDescribeVideoTool(this.geminiService);
 
     this.tools.set('gemini_chat', geminiChatTool);
     this.tools.set('gemini_list_models', geminiListModelsTool);
     this.tools.set('gemini_deep_research', geminiDeepResearchTool);
-    this.tools.set('gemini_describe_video', geminiDescribeVideoTool);
 
     logger.info('Tools initialized', {
       toolCount: this.tools.size,
