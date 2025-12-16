@@ -1,5 +1,6 @@
 # Gemini MCP Server
 
+[![Smithery MCP Server](https://smithery.ai/badge/@houtini/gemini-mcp)](https://smithery.ai/server/@houtini/gemini-mcp)
 [![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@houtini/gemini-mcp)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
