@@ -1,0 +1,6 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+runtime: "typescript"
+
+env:
+  NODE_ENV: "production"
