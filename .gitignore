@@ -62,6 +62,7 @@ Thumbs.db
 # Secrets and configuration
 .env
 *.env
+.npmrc
 config.json
 claude_desktop_config*.json
 *api_key*

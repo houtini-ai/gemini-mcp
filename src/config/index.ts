@@ -24,7 +24,7 @@ export const config: Config = {
         threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       }
     ],
-    defaultModel: 'gemini-2.5-flash-lite-preview-09-2025',
+    defaultModel: 'gemini-2.5-flash',
     maxTokens: 16384,
     temperature: 0.7,
     defaultGrounding: true,
