@@ -59,7 +59,7 @@
     "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "dotenv": "^16.4.5",
-    "winston": "^3.14.0"
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
