@@ -1,4 +1,4 @@
-import logger from './logger';
+import logger from './logger.js';
 
 export class McpError extends Error {
   public code: string;

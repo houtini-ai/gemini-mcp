@@ -6,92 +6,54 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-green?style=flat-square)](https://modelcontextprotocol.io)
 
-A professional, production-ready Model Context Protocol (MCP) server that provides seamless integration with Google's Gemini AI models. Built with TypeScript and designed for enterprise use, this package offers robust error handling, comprehensive logging, and easy deployment.
+A production-ready Model Context Protocol server for Google's Gemini AI models. I've built this with TypeScript and the latest MCP SDK (1.25.3), focusing on real-world reliability rather than feature bloat.
+
+## What This Does
+
+This server connects Claude Desktop (or any MCP client) to Google's Gemini models. The integration is straightforward: chat with Gemini, get model information, and run deep research tasks with Google Search grounding built in.
+
+What I think matters here: the server discovers available models automatically from Google's API, which means you're always working with the latest releases without updating configuration files. No hardcoded model lists that go stale.
 
 ## Quick Start
 
-The easiest way to get started is using `npx` - no installation required:
+The simplest way to use this is with `npx` - no installation required:
 
 ```bash
-# Get your API key from Google AI Studio
+# Get your API key from Google AI Studio first
 # https://makersuite.google.com/app/apikey
 
-# Test the server (optional)
+# Test it works (optional)
 npx @houtini/gemini-mcp
 
-# Add to Claude Desktop (see configuration below)
+# Add to Claude Desktop (configuration below)
 ```
 
-## Table of Contents
+## Installation Options
 
-- [Features](#features)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Dynamic Model Discovery](#dynamic-model-discovery)
-- [Experimental Models](#experimental-models)
-- [Usage Examples](#usage-examples)
-- [Prompting Guide](PROMPTING_GUIDE.md)
-- [Google Search Grounding](#google-search-grounding)
-- [Deep Research](#deep-research)
-- [API Reference](#api-reference)
-- [Development](#development)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-
-## Features
-
-### Core Functionality
-- **Dynamic Model Discovery** - Automatically discovers and uses the latest Gemini models (transparent, zero configuration)
-- **Chat Interface** - Advanced chat functionality with customisable parameters
-- **Google Search Grounding** - Real-time web search integration enabled by default for current information
-- **Deep Research** - Iterative multi-step research with comprehensive synthesis
-- **Model Information** - Detailed model capabilities with accurate context window sizes directly from Google
-- **Fine-Grained Control** - Temperature, token limits, and system prompts
-
-### Enterprise Features
-- **Professional Architecture** - Modular services-based design
-- **Robust Error Handling** - Comprehensive error handling with detailed logging
-- **Winston Logging** - Production-ready logging with file rotation
-- **Security Focused** - No hardcoded credentials, environment-based configuration
-- **Full TypeScript** - Complete type safety and IntelliSense support
-- **High Performance** - Optimised for minimal latency and resource usage
-- **Graceful Fallback** - Automatic fallback to proven models if discovery fails
-
-## Installation
-
-### Prerequisites
-
-- **Node.js** v24.0.0 or higher
-- **Google AI Studio API Key** ([Get your key here](https://makersuite.google.com/app/apikey))
-
-### Recommended: No Installation Required
-
-The simplest approach uses `npx` to run the latest version automatically:
+### Recommended: npx (No Installation)
 
 ```bash
-# No installation needed - npx handles everything
 npx @houtini/gemini-mcp
 ```
 
-### Alternative Installation Methods
+This approach pulls the latest version automatically. I prefer this because you don't clutter your system with global packages, and updates happen transparently.
 
-#### Global Installation
+### Alternative: Global Installation
+
 ```bash
-# Install once, use anywhere
 npm install -g @houtini/gemini-mcp
 gemini-mcp
 ```
 
-#### Local Project Installation
-```bash
-# Install in your project
-npm install @houtini/gemini-mcp
+### Alternative: Local Project
 
-# Run with npx
+```bash
+npm install @houtini/gemini-mcp
 npx @houtini/gemini-mcp
 ```
 
-#### From Source (Developers)
+### From Source (Developers)
+
 ```bash
 git clone https://github.com/houtini-ai/gemini-mcp.git
 cd gemini-mcp
@@ -104,16 +66,16 @@ npm start
 
 ### Step 1: Get Your API Key
 
-Visit [Google AI Studio](https://makersuite.google.com/app/apikey) to create your free API key.
+Visit [Google AI Studio](https://makersuite.google.com/app/apikey) to create a free API key. This takes about 30 seconds.
 
 ### Step 2: Configure Claude Desktop
 
-Add this configuration to your Claude Desktop config file:
+Add this to your Claude Desktop config file:
 
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-#### Recommended Configuration (using npx)
+#### Using npx (Recommended)
 
 ```json
 {
@@ -129,13 +91,7 @@ Add this configuration to your Claude Desktop config file:
 }
 ```
 
-**Benefits of this approach:**
-- No global installation required
-- Always uses the latest version
-- Cleaner system (no global packages)
-- Works out of the box
-
-#### Alternative: Global Installation
+#### Using Global Installation
 
 ```json
 {
@@ -150,9 +106,9 @@ Add this configuration to your Claude Desktop config file:
 }
 ```
 
-*Note: Requires `npm install -g @houtini/gemini-mcp` first*
+Requires `npm install -g @houtini/gemini-mcp` first.
 
-#### Alternative: Local Installation
+#### Using Local Build
 
 ```json
 {
@@ -168,15 +124,13 @@ Add this configuration to your Claude Desktop config file:
 }
 ```
 
-*Note: Only works if installed locally in the current directory*
+Only works if installed locally in the current directory.
 
 ### Step 3: Restart Claude Desktop
 
-After updating the configuration file, restart Claude Desktop to load the new MCP server.
+After updating the config, restart Claude Desktop. The server loads on startup.
 
-### Optional Configuration
-
-You can add additional environment variables for more control:
+### Optional: Additional Configuration
 
 ```json
 {
@@ -186,105 +140,79 @@ You can add additional environment variables for more control:
       "args": ["@houtini/gemini-mcp"],
       "env": {
         "GEMINI_API_KEY": "your-api-key-here",
-        "LOG_LEVEL": "info"
+        "LOG_LEVEL": "info",
+        "GEMINI_ALLOW_EXPERIMENTAL": "false"
       }
     }
   }
 }
 ```
 
-**Available Environment Variables:**
+**Environment Variables:**
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable | Default | What It Does |
+|----------|---------|--------------|
 | `GEMINI_API_KEY` | *required* | Your Google AI Studio API key |
-| `LOG_LEVEL` | `info` | Logging level: `debug`, `info`, `warn`, `error` |
-| `GEMINI_ALLOW_EXPERIMENTAL` | `false` | Allow experimental/preview models as defaults (set to `true` to enable) |
+| `LOG_LEVEL` | `info` | Logging detail: `debug`, `info`, `warn`, `error` |
+| `GEMINI_ALLOW_EXPERIMENTAL` | `false` | Include experimental models (set `true` to enable) |
 
 ## Dynamic Model Discovery
 
-This server features **intelligent, transparent model discovery** that automatically keeps you up to date with the latest Gemini models—without any configuration needed.
+The server automatically discovers available Gemini models from Google's API on first use. This happens transparently - you don't need to configure anything.
 
 ### How It Works
 
-The server uses **lazy initialisation** to discover models on your first request:
+1. Server starts instantly with reliable fallback models
+2. First request triggers model discovery from Google's API (adds 1-2 seconds once)
+3. Subsequent requests use the discovered models (no delay)
+4. If discovery fails, fallback models work immediately
 
-1. **Server Starts** - Instant startup with proven fallback models
-2. **First Request** - Automatically queries Google's API for latest models
-3. **Discovery Completes** - Updates to use the newest available models
-4. **Subsequent Requests** - Use the discovered models (no delay)
-5. **Graceful Fallback** - If API discovery fails, continues with reliable fallback models
+What I've found: this approach keeps you current with Google's releases whilst maintaining instant startup. The server filters to stable production models by default, which avoids experimental model rate limits.
 
-### Key Benefits
+### What Gets Discovered
 
-- **Zero Configuration** - Works automatically, no setup required  
-- **Always Current** - New models available as soon as Google releases them  
-- **Transparent** - You don't need to know it exists  
-- **Instant Startup** - No delay in server initialisation  
-- **Smart Selection** - Automatically chooses the best default model  
-- **Fail-Safe** - Gracefully handles API failures  
+- All available Gemini models (stable and experimental)
+- Accurate context window sizes directly from Google
+- Model capabilities and recommended use cases
+- Latest releases as soon as Google makes them available
 
-### What Models Are Discovered?
-
-The system discovers all available Gemini models including:
-- Latest stable releases
-- Context window sizes - Accurate limits directly from Google
-- Model capabilities - What each model supports
-- Specialised models - Vision, audio, and other variants
-
-By default, the server **filters to stable production models only**, ensuring reliable performance and avoiding quota limits on experimental models.
-
-### Default Model Selection
-
-The server intelligently selects the default model using these priorities:
-
-1. **Stable models only** (filters out experimental/preview by default)
-2. **Newest version** (2.5 > 2.0 > 1.5)
-3. **Flash preference** (faster models prioritised)
-4. **Capability matching** (must support text generation)
-
-**Current expected default**: Latest stable Flash model (typically `gemini-2.5-flash`)
+The default model selection prioritises: stable models over experimental, newest version available, Flash variants for speed, and capability matching for your request type.
 
 ### Performance Impact
 
-- **Startup Time**: 0ms - Server starts instantly
-- **First Request**: +1-2 seconds (one-time model discovery)
-- **Subsequent Requests**: 0ms overhead
-- **Discovery Failure**: 0ms - Uses fallback models immediately
+- Startup: 0ms (instant)
+- First request: +1-2 seconds (one-time discovery)
+- Subsequent requests: 0ms overhead
+- Discovery failure: 0ms (uses fallback immediately)
 
-### For Advanced Users
-
-If you want to see which models were discovered, check the server logs after your first request:
-
+Check your logs after first request to see what was discovered:
 ```
 Models discovered from API (count: 38, defaultModel: gemini-2.5-flash)
 ```
 
 ## Experimental Models
 
-By default, the server uses **stable production models** to ensure reliable performance and avoid rate limiting issues. However, you can optionally enable experimental and preview models if you want access to cutting-edge features.
+By default, the server uses stable production models. This ensures reliable performance and avoids Google's stricter rate limits on experimental releases.
 
-### Stable vs Experimental Models
+### Stable vs Experimental
 
-**Stable Models** (default):
-- Production-ready and reliable
-- Better rate limits and quotas
+**Stable Models** (default behaviour):
+- Production-ready
+- Better rate limits
 - Consistent performance
-- Fully tested and supported
 - Examples: `gemini-2.5-flash`, `gemini-2.5-pro`, `gemini-2.0-flash`
 
 **Experimental Models** (opt-in):
-- Latest features and capabilities
+- Latest features before stable release
 - Stricter rate limits
-- May have unexpected behaviour
+- Potentially unexpected behaviour
 - Can be deprecated quickly
-- Examples: `gemini-exp-1206`, `gemini-2.0-flash-thinking-exp`, preview releases
+- Examples: `gemini-exp-1206`, `gemini-2.0-flash-thinking-exp`
 
 ### Enabling Experimental Models
 
-To include experimental and preview models in discovery and selection:
+Set `GEMINI_ALLOW_EXPERIMENTAL=true` in your configuration:
 
-**In Claude Desktop Config:**
 ```json
 {
   "mcpServers": {
@@ -300,62 +228,23 @@ To include experimental and preview models in discovery and selection:
 }
 ```
 
-**Using .env file:**
-```env
-GEMINI_API_KEY=your-api-key-here
-GEMINI_ALLOW_EXPERIMENTAL=true
-```
+This includes experimental models in discovery and makes them eligible as defaults. You can still explicitly request any model regardless of this setting - the flag only affects which models are used automatically.
 
-### What Changes When Enabled?
+### When to Enable
 
-With `GEMINI_ALLOW_EXPERIMENTAL=true`:
-- Experimental models become available for selection
-- Experimental models can be chosen as the default
-- Preview and thinking models are included in model lists
-- You gain access to latest features before stable release
+Keep experimental disabled if you need reliable, consistent performance or you're building production applications.
 
-**Note**: You can always explicitly specify any model (experimental or stable) in your requests, regardless of this setting. This flag only affects which models are used as defaults.
-
-### Recommended Use Cases
-
-**Keep Experimental Disabled (default) if:**
-- You need reliable, consistent performance
-- You're building production applications
-- You want to avoid rate limit issues
-- You prefer tested, stable features
-
-**Enable Experimental if:**
-- You want to test cutting-edge features
-- You're doing research or experimentation
-- You understand the trade-offs
-- You can handle potential rate limits
-
-### Using .env File (Development)
-
-For development or testing, create a `.env` file:
-
-```env
-# Google Gemini Configuration
-GEMINI_API_KEY=your-api-key-here
-
-# Optional: Enable experimental models
-GEMINI_ALLOW_EXPERIMENTAL=false
-
-# Logging Configuration (optional)
-LOG_LEVEL=info
-```
+Enable experimental if you're testing cutting-edge features, doing research, or you understand the rate limit trade-offs.
 
 ## Usage Examples
 
 ### Basic Chat
 
-Ask Claude to use Gemini:
-
 ```
 Can you help me understand quantum computing using Gemini?
 ```
 
-Claude will automatically use the `gemini_chat` tool to get a response from Gemini.
+Claude automatically uses the `gemini_chat` tool.
 
 ### Creative Writing
 
@@ -366,7 +255,7 @@ Use Gemini to write a short story about artificial intelligence discovering crea
 ### Technical Analysis
 
 ```
-Can you use Gemini Pro to explain the differences between various machine learning algorithms?
+Use Gemini Pro to explain the differences between various machine learning algorithms.
 ```
 
 ### Model Selection
@@ -385,15 +274,15 @@ Show me all available Gemini models and their capabilities.
 
 ## Complete Prompting Guide
 
-Want to get the most out of Gemini MCP? Check out our **[Comprehensive Prompting Guide](PROMPTING_GUIDE.md)** for:
+Check the **[Comprehensive Prompting Guide](PROMPTING_GUIDE.md)** for:
 
 - Advanced prompting techniques
-- Model selection strategies  
+- Model selection strategies
 - Parameter tuning (temperature, tokens, system prompts)
-- Leveraging Google Search grounding
+- Using Google Search grounding
 - Creative workflows and use cases
-- Best practices and tips
-- Troubleshooting common issues
+- Best practices
+- Troubleshooting
 
 **[Read the Prompting Guide](PROMPTING_GUIDE.md)**
 
@@ -401,33 +290,23 @@ Want to get the most out of Gemini MCP? Check out our **[Comprehensive Prompting
 
 ## Google Search Grounding
 
-This server includes **Google Search grounding** functionality powered by Google's real-time web search, providing Gemini models with access to current web information. This feature is **enabled by default** and significantly enhances response accuracy for questions requiring up-to-date information.
+Google Search grounding is built in and enabled by default. This gives Gemini models access to current web information, which significantly improves accuracy for questions requiring up-to-date data.
 
-### Key Benefits
+### What It Does
 
-- **Real-time Information** - Access to current news, events, stock prices, weather, and developments
-- **Factual Accuracy** - Reduces AI hallucinations by grounding responses in verified web sources
-- **Source Citations** - Automatic citation of sources with search queries used
-- **Seamless Integration** - Works transparently without changing your existing workflow
-- **Smart Search** - AI automatically determines when to search based on query content
+When you ask a question that benefits from current information:
+1. Analyses your query to determine if web search helps
+2. Generates relevant search queries automatically
+3. Performs Google searches using targeted queries
+4. Processes results and synthesises information
+5. Provides enhanced response with inline citations
+6. Shows search metadata including queries used
 
-### How Google Search Grounding Works
-
-When you ask a question that benefits from current information, the system:
-
-1. **Analyses your query** to determine if web search would improve the answer
-2. **Generates relevant search queries** automatically based on your question  
-3. **Performs Google searches** using multiple targeted queries
-4. **Processes search results** and synthesises information from multiple sources
-5. **Provides enhanced response** with inline citations and source links
-6. **Shows search metadata** including the actual queries used for transparency
-
-### Perfect For These Use Cases
+### Best Use Cases
 
 **Current Events & News**
 ```
 What are the latest developments in AI announced this month?
-What's happening with the 2025 climate negotiations?
 Recent breakthroughs in quantum computing research?
 ```
 
@@ -435,80 +314,61 @@ Recent breakthroughs in quantum computing research?
 ```
 Current stock prices for major tech companies
 Today's weather forecast for London
-Latest cryptocurrency market trends
 ```
 
 **Recent Developments**
 ```
-New software releases and updates this week
-Recent scientific discoveries in medicine
-Latest policy changes in renewable energy
+New software releases this week
+Latest scientific discoveries in medicine
 ```
 
-**Fact Checking & Verification**
+**Fact Checking**
 ```
 Verify recent statements about climate change
 Check the latest statistics on global internet usage
-Confirm recent merger and acquisition announcements
 ```
 
-### Controlling Grounding Behaviour
+### Controlling Grounding
 
-**Default Behaviour**: Grounding is **enabled by default** for optimal results and accuracy.
+Grounding is enabled by default. Disable it for purely creative or hypothetical responses:
 
-**Disable for Creative Tasks**: When you want purely creative or hypothetical responses:
 ```
 Use Gemini without web search to write a fictional story about dragons in space.
-Write a creative poem about imaginary colours that don't exist.
 ```
 
-**Technical Control**: When using the API directly, use the `grounding` parameter:
+For API calls, use the `grounding` parameter:
 
 ```json
 {
   "message": "Write a creative story about time travel",
-  "model": "gemini-2.5-flash",
   "grounding": false
-}
-```
-
-```json
-{
-  "message": "What are the latest developments in renewable energy?",
-  "model": "gemini-2.5-flash", 
-  "grounding": true
 }
 ```
 
 ### Understanding Grounded Responses
 
-When grounding is active, responses include:
+Grounded responses include source citations and search transparency:
 
-**Source Citations**: Links to the websites used for information
 ```
 Sources: (https://example.com/article1) (https://example.com/article2)
+Search queries used: latest AI developments 2025, OpenAI GPT-5 release
 ```
 
-**Search Transparency**: The actual search queries used
-```
-Search queries used: latest AI developments 2025, OpenAI GPT-5 release, Google Gemini updates
-```
-
-**Enhanced Accuracy**: Information synthesis from multiple authoritative sources rather than relying solely on training data
+What I've found: grounding dramatically reduces hallucinations for factual queries whilst maintaining creative flexibility when you need it.
 
 ## Deep Research
 
-The server includes a powerful **deep research** capability that performs iterative multi-step research on complex topics, synthesising comprehensive reports with proper source citations.
+The server includes deep research capability that performs iterative multi-step research on complex topics. This synthesises comprehensive reports with proper citations.
 
-### How Deep Research Works
+### How It Works
 
-Deep research conducts multiple research iterations, each building on previous findings:
+Deep research conducts multiple research iterations:
 
-1. **Initial Research** - Broad exploration of the topic
-2. **Gap Analysis** - Identifies what hasn't been covered
-3. **Targeted Research** - Digs deeper into specific areas
-4. **Synthesis** - Creates comprehensive report with citations
-5. **Iteration** - Repeats until thorough coverage achieved
+1. Initial broad exploration
+2. Gap analysis identifying what's missing
+3. Targeted research into specific areas
+4. Synthesis into comprehensive report
+5. Iteration until thorough coverage
 
 ### Using Deep Research
 
@@ -516,16 +376,19 @@ Deep research conducts multiple research iterations, each building on previous f
 Use Gemini deep research to investigate the impact of quantum computing on cybersecurity.
 ```
 
-You can specify research parameters:
+With parameters:
 ```
 Use Gemini deep research with 7 iterations to create a comprehensive report on renewable energy trends, focusing on solar and wind power adoption rates.
 ```
 
 ### Research Parameters
 
-- **max_iterations**: Number of research cycles (3-10, default 5)
-- **focus_areas**: Specific aspects to emphasise
-- **model**: Which Gemini model to use (defaults to latest stable)
+| Parameter | Type | Default | What It Does |
+|-----------|------|---------|--------------|
+| `research_question` | string | *required* | The topic to investigate |
+| `max_iterations` | integer | 5 | Research cycles (3-10) |
+| `focus_areas` | array | - | Specific aspects to emphasise |
+| `model` | string | *latest stable* | Which model to use |
 
 ### Best For
 
@@ -535,89 +398,72 @@ Use Gemini deep research with 7 iterations to create a comprehensive report on r
 - Policy research and impact assessments
 - Multi-faceted business problems
 
-### Configuring max_iterations for Different Environments
+### Configuring Iterations by Environment
 
-The `max_iterations` parameter controls how many research cycles are performed. Different AI environments have varying timeout tolerances, so it's important to configure appropriately:
+Different AI environments have different timeout tolerances:
 
-**Claude Desktop (Recommended: 3-5 iterations)**
-- **Timeout**: Approximately 4 minutes
-- **Recommended Setting**: Use 3-4 iterations for most research tasks
-- **Maximum Safe**: 5 iterations
-- **Why**: Claude Desktop has a stricter timeout to ensure responsive UI
+**Claude Desktop (3-5 iterations recommended)**
+- Timeout: ~4 minutes
+- Safe maximum: 5 iterations
+- Use 3-4 for most tasks
 
-Example:
-```
-Use Gemini deep research with 3 iterations to analyse competitive landscape in renewable energy storage.
-```
+**Agent SDK / IDEs (7-10 iterations recommended)**
+- Timeout: 10+ minutes
+- Maximum: 10 iterations
+- Use 7-10 for comprehensive research
 
-**Agent SDK / IDEs (VSCode, Cursor, Windsurf) (Recommended: 7-10 iterations)**
-- **Timeout**: Much longer (typically 10+ minutes)
-- **Recommended Setting**: Use 7-10 iterations for comprehensive research
-- **Maximum**: 10 iterations
-- **Why**: These environments have more generous timeouts and can handle longer-running processes
+**AI Platforms like Cline, Roo-Cline (7-10 iterations)**
+- Similar to Agent SDK
+- Can handle longer processes
 
-Example:
-```
-Use Gemini deep research with 8 iterations to create a comprehensive market analysis of AI chips in datacenter applications.
-```
+### Handling Timeouts
 
-**AI Platforms (Cline, Roo-Cline) (Recommended: 7-10 iterations)**
-- **Timeout**: Similar to Agent SDK environments
-- **Recommended Setting**: Use 7-10 iterations
-- **Maximum**: 10 iterations
+If you hit timeout or thread limits:
 
-**If You Hit Context/Thread Limits**
-
-If you encounter timeout errors or thread limits:
-
-1. **Reduce iterations**: Start with 3 iterations and gradually increase
-2. **Narrow focus**: Use the `focus_areas` parameter to be more specific
-3. **Split research**: Break complex topics into multiple smaller research tasks
-4. **Check environment**: Verify which environment you're using and adjust accordingly
+1. Reduce iterations (start with 3)
+2. Narrow focus using `focus_areas` parameter
+3. Split complex topics into smaller research tasks
+4. Check which environment you're using
 
 Example with focused research:
 ```
 Use Gemini deep research with 3 iterations focusing on cost analysis and market adoption to examine solar panel technology trends.
 ```
 
-**Note**: The server automatically manages context efficiently, so Claude Desktop users are unlikely to hit thread limits with recommended iteration counts. However, if you do encounter issues, simply reduce `max_iterations` to 3 or 4.
-
-**Note**: Deep research takes several minutes as it performs multiple iterations. Perfect for when you need comprehensive, well-researched analysis rather than quick answers.
+Deep research takes several minutes. It's designed for comprehensive analysis rather than quick answers.
 
 ## API Reference
 
-### Available Tools
+### gemini_chat
 
-#### `gemini_chat`
-
-Chat with Gemini models to generate text responses.
+Chat with Gemini models.
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `message` | string | Yes | - | The message to send to Gemini |
-| `model` | string | No | *Latest stable* | Model to use (dynamically selected) |
-| `temperature` | number | No | 0.7 | Controls randomness (0.0-1.0) |
-| `max_tokens` | integer | No | 4096 | Maximum tokens in response (1-16384) |
-| `system_prompt` | string | No | - | System instruction to guide the model |
-| `grounding` | boolean | No | true | Enable Google Search grounding for real-time information |
+| Parameter | Type | Required | Default | What It Does |
+|-----------|------|----------|---------|--------------|
+| `message` | string | Yes | - | The message to send |
+| `model` | string | No | *Latest stable* | Which model to use |
+| `temperature` | number | No | 0.7 | Randomness (0.0-1.0) |
+| `max_tokens` | integer | No | 8192 | Maximum response length (1-32768) |
+| `system_prompt` | string | No | - | System instruction |
+| `grounding` | boolean | No | true | Enable Google Search |
 
 **Example:**
 ```json
 {
   "message": "What are the latest developments in quantum computing?",
-  "model": "gemini-1.5-pro", 
+  "model": "gemini-1.5-pro",
   "temperature": 0.5,
   "max_tokens": 1000,
-  "system_prompt": "You are a helpful technology expert. Provide current, factual information with sources where possible.",
+  "system_prompt": "You are a technology expert. Provide current information with sources.",
   "grounding": true
 }
 ```
 
-#### `gemini_list_models`
+### gemini_list_models
 
-Retrieve information about all discovered Gemini models.
+Retrieve information about discovered Gemini models.
 
 **Parameters:** None required
 
@@ -628,22 +474,22 @@ Retrieve information about all discovered Gemini models.
 
 **Response includes:**
 - Model names and display names
-- Descriptions of each model's strengths
-- Context window sizes (directly from Google)
+- Descriptions of strengths
+- Context window sizes from Google
 - Recommended use cases
 
-#### `gemini_deep_research`
+### gemini_deep_research
 
-Conduct iterative multi-step research on complex topics.
+Conduct iterative multi-step research.
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `research_question` | string | Yes | - | The topic or question to research |
-| `max_iterations` | integer | No | 5 | Number of research cycles (3-10) |
-| `focus_areas` | array | No | - | Specific aspects to emphasise |
-| `model` | string | No | *Latest stable* | Model to use for research |
+| Parameter | Type | Required | Default | What It Does |
+|-----------|------|----------|---------|--------------|
+| `research_question` | string | Yes | - | Topic to research |
+| `max_iterations` | integer | No | 5 | Research cycles (3-10) |
+| `focus_areas` | array | No | - | Specific areas to emphasise |
+| `model` | string | No | *Latest stable* | Model to use |
 
 **Example:**
 ```json
@@ -656,128 +502,102 @@ Conduct iterative multi-step research on complex topics.
 
 ### Available Models
 
-Models are **dynamically discovered** from Google's API. The exact list may vary, but typically includes:
+Models are dynamically discovered from Google's API. Typical available models:
 
-| Model Pattern | Best For | Description |
-|---------------|----------|-------------|
-| **gemini-2.5-flash** | General use, latest features | Latest Gemini 2.5 Flash - Fast, versatile performance |
-| **gemini-2.5-pro** | Complex reasoning | Latest Gemini 2.5 Pro - Advanced reasoning capabilities |
-| **gemini-2.0-flash** | Speed-optimised tasks | Gemini 2.0 Flash - Fast, efficient model |
-| **gemini-1.5-flash** | Quick responses | Gemini 1.5 Flash - Fast, efficient model |
-| **gemini-1.5-pro** | Large context | Gemini 1.5 Pro - 2M token context window |
+| Model | Best For | Description |
+|-------|----------|-------------|
+| **gemini-2.5-flash** | General use | Latest Flash - fast, versatile |
+| **gemini-2.5-pro** | Complex reasoning | Latest Pro - advanced capabilities |
+| **gemini-2.0-flash** | Speed-optimised | Gemini 2.0 Flash - efficient |
+| **gemini-1.5-flash** | Quick responses | Gemini 1.5 Flash - fast |
+| **gemini-1.5-pro** | Large context | 2M token context window |
 
-**Note**: Use `gemini_list_models` to see the exact models available with current context window sizes.
+Use `gemini_list_models` to see exact available models with current context limits.
 
 ## Development
 
 ### Building from Source
 
 ```bash
-# Clone the repository
 git clone https://github.com/houtini-ai/gemini-mcp.git
 cd gemini-mcp
-
-# Install dependencies
 npm install
-
-# Build the project
 npm run build
-
-# Run in development mode
 npm run dev
 ```
 
 ### Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run build` | Compile TypeScript to JavaScript |
-| `npm run dev` | Run in development mode with live reload |
-| `npm start` | Run the compiled server |
-| `npm test` | Run test suite |
+| Command | What It Does |
+|---------|--------------|
+| `npm run build` | Compile TypeScript |
+| `npm run dev` | Development mode with live reload |
+| `npm start` | Run compiled server |
+| `npm test` | Run tests |
 | `npm run lint` | Check code style |
-| `npm run lint:fix` | Fix linting issues automatically |
+| `npm run lint:fix` | Fix linting issues |
 
 ### Project Structure
 
 ```
 src/
 ├── config/           # Configuration management
-│   ├── index.ts      # Main configuration
-│   └── types.ts      # Configuration types
-├── services/         # Core business logic
-│   ├── base-service.ts
-│   └── gemini/       # Gemini service implementation
-│       ├── index.ts
-│       └── types.ts
+├── services/         # Business logic
+│   └── gemini/       # Gemini API integration
 ├── tools/            # MCP tool implementations
-│   ├── gemini-chat.ts
-│   ├── gemini-list-models.ts
-│   └── gemini-deep-research.ts
-├── utils/            # Utility functions
-│   ├── logger.ts     # Winston logging setup
-│   └── error-handler.ts
-├── cli.ts            # CLI entry point
-└── index.ts          # Main server implementation
+├── utils/            # Logger and error handling
+├── cli.ts            # CLI entry
+└── index.ts          # Main server
 ```
 
 ### Architecture
 
-The server follows a clean, layered architecture:
+The server follows clean, layered architecture:
 
-1. **CLI Layer** (`cli.ts`) - Command-line interface
-2. **Server Layer** (`index.ts`) - MCP protocol handling
-3. **Tools Layer** (`tools/`) - MCP tool implementations
-4. **Service Layer** (`services/`) - Business logic and API integration
-5. **Utility Layer** (`utils/`) - Cross-cutting concerns
+1. CLI Layer - Command-line interface
+2. Server Layer - MCP protocol handling
+3. Tools Layer - MCP tool implementations
+4. Service Layer - Business logic and API integration
+5. Utility Layer - Logging and error handling
 
 ## Troubleshooting
 
-### Common Issues
+### "GEMINI_API_KEY environment variable not set"
 
-#### "GEMINI_API_KEY environment variable not set"
+Check your Claude Desktop configuration includes the API key in the `env` section.
 
-**Solution:**
-```bash
-# Make sure your API key is set in the Claude Desktop configuration
-# See the Configuration section above
-```
+### Server Not Appearing in Claude Desktop
 
-#### Server not appearing in Claude Desktop
-
-**Solutions:**
-1. **Restart Claude Desktop** after updating configuration
-2. **Check your configuration file path**:
+1. Restart Claude Desktop after configuration changes
+2. Verify config file path:
    - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
    - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-3. **Verify JSON syntax** - use a JSON validator if needed
-4. **Ensure your API key is valid** - test at [Google AI Studio](https://makersuite.google.com/app/apikey)
+3. Validate JSON syntax
+4. Test your API key at [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-#### "Module not found" errors with npx
+### "Module not found" with npx
 
-**Solutions:**
 ```bash
-# Clear npx cache and try again
+# Clear npx cache
 npx --yes @houtini/gemini-mcp
 
-# Or install globally if preferred
+# Or install globally
 npm install -g @houtini/gemini-mcp
 ```
 
-#### Node.js version issues
+### Node.js Version Issues
 
-**Solution:**
 ```bash
-# Check your Node.js version
+# Check version
 node --version
 
-# Should be v24.0.0 or higher
-# Install latest Node.js from https://nodejs.org
+# Should be v18.0.0 or higher
+# Update from https://nodejs.org
 ```
 
 ### Debug Mode
 
-Enable detailed logging by setting `LOG_LEVEL=debug` in your Claude Desktop configuration:
+Enable detailed logging:
 
 ```json
 {
@@ -797,85 +617,94 @@ Enable detailed logging by setting `LOG_LEVEL=debug` in your Claude Desktop conf
 ### Log Files
 
 Logs are written to:
-- **Console output** (visible in Claude Desktop developer tools)
-- **`logs/combined.log`** - All log levels
-- **`logs/error.log`** - Error logs only
+- Console output (Claude Desktop developer tools)
+- `logs/combined.log` - All levels
+- `logs/error.log` - Errors only
 
 ### Testing Your Setup
 
-Test the server with these Claude queries:
-
-1. **Basic connectivity**: "Can you list the available Gemini models?"
-2. **Simple chat**: "Use Gemini to explain photosynthesis."
-3. **Advanced features**: "Use Gemini 1.5 Pro with temperature 0.9 to write a creative poem about coding."
+Test with these queries:
+1. "Can you list the available Gemini models?"
+2. "Use Gemini to explain photosynthesis."
+3. "Use Gemini 1.5 Pro with temperature 0.9 to write a creative poem about coding."
 
 ### Performance Tuning
 
 For better performance:
 
-1. **Adjust token limits** based on your use case
-2. **Use appropriate models** (Flash for speed, Pro for complex tasks)
-3. **Monitor logs** for rate limiting or API issues
-4. **Set reasonable temperature values** (0.7 for balanced, 0.3 for focused, 0.9 for creative)
+- Adjust token limits based on your use case
+- Use appropriate models (Flash for speed, Pro for complexity)
+- Monitor logs for rate limiting issues
+- Set temperature values appropriately (0.7 balanced, 0.3 focused, 0.9 creative)
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions welcome. Follow these steps:
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes** and add tests if applicable
-4. **Ensure all tests pass**: `npm test`
-5. **Lint your code**: `npm run lint:fix`
-6. **Build the project**: `npm run build`
-7. **Commit your changes**: `git commit -m 'Add amazing feature'`
-8. **Push to the branch**: `git push origin feature/amazing-feature`
-9. **Open a Pull Request**
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Run tests: `npm test`
+5. Lint: `npm run lint:fix`
+6. Build: `npm run build`
+7. Commit: `git commit -m 'Add amazing feature'`
+8. Push: `git push origin feature/amazing-feature`
+9. Open a Pull Request
 
 ### Development Guidelines
 
 - Follow TypeScript best practices
 - Add tests for new functionality
-- Update documentation as needed
+- Update documentation
 - Use conventional commit messages
-- Ensure backwards compatibility
+- Maintain backwards compatibility
 
-## License
+## Technical Details
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Migration to MCP SDK 1.25.3
 
-## Disclaimer and Important Information
+This server has been migrated to the latest MCP SDK (1.25.3) with ES modules support. Key technical changes:
 
-**Use at Your Own Risk**: This software is provided "as is" without warranty of any kind, express or implied. The authors and contributors accept no responsibility for any damages, data loss, security breaches, or other issues arising from the use of this software.
+**SDK Updates:**
+- Migrated from `Server` class to `McpServer` API
+- Tool registration uses `registerTool` with Zod validation
+- ES modules throughout (`"type": "module"`)
+- TypeScript configured for `nodenext` module resolution
 
-**Content Safety**: This MCP server interfaces with Google's Gemini AI models. Whilst the server implements content safety settings, the quality and appropriateness of AI-generated content cannot be guaranteed. Users are responsible for:
-- Reviewing AI-generated content before use
-- Ensuring compliance with applicable laws and regulations
-- Implementing additional safety measures as needed for their use case
+**Compatibility:**
+- Node.js 18+ (changed from 24+ for broader compatibility)
+- All imports use `.js` extensions for ES module compliance
+- Zod schemas for runtime type validation
+- Modern MCP protocol implementation
 
-**API Key Security**: Your Google Gemini API key is sensitive credential information. Users are responsible for:
-- Keeping API keys confidential and secure
-- Not committing API keys to version control
-- Rotating keys if exposure is suspected
-- Managing API usage and associated costs
+**Build System:**
+- TypeScript compiles to ES2022 modules
+- Clean separation between business logic and MCP interface
+- Preserved all Gemini API client functionality
 
-**Data Privacy**: This server processes data sent through the Model Context Protocol. Users should:
-- Avoid sending sensitive, personal, or confidential information
-- Review Google's privacy policy and terms of service
-- Understand that data may be processed by Google's services
-- Implement appropriate data handling policies
+What this means practically: the server now follows modern Node.js and MCP standards, which should prevent compatibility issues with future Claude Desktop updates whilst maintaining all existing functionality.
 
-**Production Use**: Whilst designed with professional standards, users deploying this in production environments should:
-- Conduct their own security audits
-- Implement appropriate monitoring and logging
-- Have incident response procedures
-- Regularly update dependencies
+## Licence
 
-**Third-Party Services**: This software relies on external services (Google Gemini API, npm packages). Service availability, pricing, and functionality may change without notice.
+This project is licensed under the Apache 2.0 Licence - see the [LICENSE](LICENSE) file for details.
 
-**No Professional Advice**: Content generated by AI models should not be considered professional advice (legal, medical, financial, etc.) without proper verification by qualified professionals.
+## Disclaimer
 
-By using this software, you acknowledge that you have read this disclaimer and agree to use the software at your own risk.
+**Use at Your Own Risk**: This software is provided "as is" without warranty. The authors accept no responsibility for damages, data loss, or other issues arising from use.
+
+**Content Safety**: This server interfaces with Google's Gemini AI models. Whilst content safety settings are implemented, AI-generated content quality cannot be guaranteed. Users are responsible for reviewing AI output before use and ensuring compliance with applicable laws.
+
+**API Key Security**: Your Google Gemini API key is sensitive. Keep it confidential, don't commit it to version control, rotate if exposed, and manage API usage costs.
+
+**Data Privacy**: This server processes data through the Model Context Protocol. Avoid sending sensitive or confidential information. Review Google's privacy policy and implement appropriate data handling.
+
+**Production Use**: Users deploying in production should conduct security audits, implement monitoring, have incident response procedures, and regularly update dependencies.
+
+**Third-Party Services**: This software relies on external services (Google Gemini API, npm packages). Service availability, pricing, and functionality may change.
+
+**No Professional Advice**: AI-generated content should not be considered professional advice (legal, medical, financial) without verification by qualified professionals.
+
+By using this software, you acknowledge these terms and agree to use at your own risk.
 
 ## Support
 
@@ -884,58 +713,72 @@ By using this software, you acknowledge that you have read this disclaimer and a
 
 ## Changelog
 
-### v1.0.4
+### v1.3.2 - Node.js 18+ Compatibility & Modern SDK
 
-**Security and Dependency Updates**
-- Updated @google/generative-ai to v0.24.1 (from v0.21.0)
-- Updated @modelcontextprotocol/sdk to v1.19.1 (from v1.18.1)
-- Updated winston, typescript, and other development dependencies
-- Changed default safety settings from BLOCK_NONE to BLOCK_MEDIUM_AND_ABOVE for better content safety
-- Added comprehensive disclaimer section covering usage risks, API security, and data privacy
-- All dependencies audited with zero vulnerabilities
+**Breaking Changes:** None (all tool interfaces preserved)
 
-### v1.1.0
+**Technical Updates:**
+- Updated to MCP SDK 1.25.3 (from 1.19.1)
+- Migrated to ES modules (`"type": "module"`)
+- Changed Node.js requirement to >=18.0.0 (from >=24.0.0) for broader compatibility
+- Migrated from `Server` to `McpServer` API
+- Implemented Zod schema validation for all tools
+- Updated TypeScript config to `nodenext` module resolution
 
-**Deep Research & Enhanced Model Discovery**
-- Added deep research capability for iterative multi-step analysis
+**Fixes:**
+- Resolved Node.js v24 ERR_MODULE_NOT_FOUND errors
+- Fixed TypeScript compilation with DOM types for fetch API
+- All imports now use `.js` extensions for ES module compliance
+
+**What This Means:**
+The server now works reliably with Node.js 18, 20, 22, and 24. All existing functionality preserved - this is purely a technical infrastructure update for better compatibility.
+
+### v1.1.0 - Deep Research & Enhanced Discovery
+
+**New Features:**
+- Added deep research capability for iterative analysis
 - Enhanced model discovery with better filtering
 - Improved default model selection logic
 - Better handling of experimental vs stable models
-- Documentation updates to reflect dynamic discovery
 
-### v1.0.3
+### v1.0.4 - Security & Dependencies
 
-**Enhanced Google Search Grounding**
-- Fixed grounding metadata field name issues for improved reliability
-- Enhanced source citation processing and display
-- Verified compatibility with latest Google Generative AI SDK (v0.21.0)
-- Comprehensive grounding documentation and usage examples
-- Resolved field naming inconsistencies in grounding response handling
-- Improved grounding metadata debugging and error handling
+**Updates:**
+- Updated @google/generative-ai to v0.24.1
+- Updated @modelcontextprotocol/sdk to v1.19.1
+- Changed safety settings to BLOCK_MEDIUM_AND_ABOVE
+- Added comprehensive disclaimer
+- Zero vulnerabilities in dependencies
 
-### v1.0.2
+### v1.0.3 - Enhanced Grounding
 
-**Google Search Grounding Introduction**
-- Added Google Search grounding functionality enabled by default
-- Real-time web search integration for current information and facts
-- Grounding metadata in responses with source citations
-- Configurable grounding parameter in chat requests
-- Enhanced accuracy for current events, news, and factual queries
+**Improvements:**
+- Fixed grounding metadata field names
+- Enhanced source citation processing
+- Improved grounding reliability
+- Better error handling for grounding
 
-### v1.0.0
+### v1.0.2 - Google Search Grounding
 
-**Initial Release**
-- Complete Node.js/TypeScript rewrite from Python
-- Professional modular architecture with services pattern
-- Comprehensive error handling and logging system
+**New Features:**
+- Added Google Search grounding (enabled by default)
+- Real-time web search integration
+- Source citations in responses
+- Configurable grounding parameter
+
+### v1.0.0 - Initial Release
+
+**Core Features:**
+- Complete TypeScript rewrite
+- Professional modular architecture
+- Comprehensive error handling
 - Full MCP protocol compliance
-- Support for multiple Gemini models
-- NPM package distribution ready
-- Enterprise-grade configuration management
+- Multiple Gemini model support
+- NPM package distribution
 - Production-ready build system
 
 ---
 
-**Built with care for the Model Context Protocol community**
+**Built for the Model Context Protocol community**
 
-For more information about MCP, visit [modelcontextprotocol.io](https://modelcontextprotocol.io)
+For more about MCP, visit [modelcontextprotocol.io](https://modelcontextprotocol.io)

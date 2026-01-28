@@ -1,14 +1,14 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { BaseService } from '../base-service';
-import { GeminiConfig } from '../../config/types';
+import { BaseService } from '../base-service.js';
+import { GeminiConfig } from '../../config/types.js';
 import { 
   ChatRequest, 
   ChatResponse, 
   ListModelsResponse, 
   ModelInfo,
   GeminiGenerationConfig 
-} from './types';
-import { GeminiError } from '../../utils/error-handler';
+} from './types.js';
+import { GeminiError } from '../../utils/error-handler.js';
 
 export class GeminiService extends BaseService {
   private genAI: GoogleGenerativeAI;

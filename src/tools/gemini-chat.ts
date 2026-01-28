@@ -1,7 +1,7 @@
 import { TextContent, Tool } from '@modelcontextprotocol/sdk/types.js';
-import { GeminiService } from '../services/gemini';
-import { createToolResult, McpError } from '../utils/error-handler';
-import logger from '../utils/logger';
+import { GeminiService } from '../services/gemini/index.js';
+import { createToolResult, McpError } from '../utils/error-handler.js';
+import logger from '../utils/logger.js';
 
 export class GeminiChatTool {
   constructor(private geminiService: GeminiService) {}

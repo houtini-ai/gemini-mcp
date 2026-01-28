@@ -1,5 +1,5 @@
 import * as winston from 'winston';
-import { config } from '../config';
+import { config } from '../config/index.js';
 
 const transports: winston.transport[] = [
   new winston.transports.File({ 

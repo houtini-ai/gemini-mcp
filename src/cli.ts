@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { GeminiMcpServer } from './index';
-import logger from './utils/logger';
+import { GeminiMcpServer } from './index.js';
+import logger from './utils/logger.js';
 
 // CLI entry point
 async function cli() {

@@ -1,8 +1,8 @@
 import { Tool, TextContent } from '@modelcontextprotocol/sdk/types.js';
-import { GeminiService } from '../services/gemini';
-import { createToolResult, McpError } from '../utils/error-handler';
-import logger from '../utils/logger';
-import { UsageMetadata } from '../services/gemini/types';
+import { GeminiService } from '../services/gemini/index.js';
+import { createToolResult, McpError } from '../utils/error-handler.js';
+import logger from '../utils/logger.js';
+import { UsageMetadata } from '../services/gemini/types.js';
 
 interface ResearchStep {
   query: string;
