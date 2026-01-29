@@ -156,6 +156,55 @@ After updating the config, restart Claude Desktop. The server loads on startup.
 | `GEMINI_API_KEY` | *required* | Your Google AI Studio API key |
 | `LOG_LEVEL` | `info` | Logging detail: `debug`, `info`, `warn`, `error` |
 | `GEMINI_ALLOW_EXPERIMENTAL` | `false` | Include experimental models (set `true` to enable) |
+| `GEMINI_MCP_LOG_FILE` | `false` | Enable file logging (see Logging section below) |
+| `DEBUG_MCP` | `false` | Enable console debugging output (stderr) |
+
+### Logging Configuration
+
+By default, the server operates with minimal logging to avoid interfering with MCP stdio communication. File logging is disabled unless explicitly enabled.
+
+**Enable File Logging:**
+
+Add `GEMINI_MCP_LOG_FILE=true` to your environment configuration:
+
+```json
+{
+  "mcpServers": {
+    "gemini": {
+      "command": "npx",
+      "args": ["@houtini/gemini-mcp"],
+      "env": {
+        "GEMINI_API_KEY": "your-api-key-here",
+        "GEMINI_MCP_LOG_FILE": "true"
+      }
+    }
+  }
+}
+```
+
+When enabled, logs are written to:
+- **Unix/macOS**: `~/.gemini-mcp/logs/`
+- **Windows**: `C:\Users\[username]\.gemini-mcp\logs\`
+
+Log files:
+- `error.log` - Error level messages only
+- `combined.log` - All log levels
+- Maximum 5MB per file, 5 files retained
+
+**Debug Mode:**
+
+For development or troubleshooting, enable console output (stderr):
+
+```json
+{
+  "env": {
+    "GEMINI_API_KEY": "your-api-key-here",
+    "DEBUG_MCP": "true"
+  }
+}
+```
+
+This outputs to stderr to avoid corrupting MCP stdio communication.
 
 ## Dynamic Model Discovery
 
