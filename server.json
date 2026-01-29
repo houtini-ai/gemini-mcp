@@ -6,12 +6,12 @@
     "url": "https://github.com/houtini-ai/gemini-mcp",
     "source": "github"
   },
-  "version": "1.4.0",
+  "version": "1.4.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@houtini/gemini-mcp",
-      "version": "1.4.0",
+      "version": "1.4.2",
       "transport": {
         "type": "stdio"
       },
