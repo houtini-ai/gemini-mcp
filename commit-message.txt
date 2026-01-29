@@ -1,0 +1,24 @@
+feat: migrate to MCP SDK 1.25.3 with ES modules and Node.js 18+ compatibility
+
+- Update SDK from 1.19.1 to 1.25.3
+- Convert to ES modules (type: module in package.json)
+- Migrate from Server to McpServer API with registerTool
+- Add Zod schema validation for all tools
+- Update TypeScript to nodenext module resolution
+- Add DOM types for native fetch API support
+- Change Node.js requirement from >=24.0.0 to >=18.0.0
+- Add .js extensions to all imports for ES module compliance
+- Rewrite README in authentic practitioner voice
+
+Technical Details:
+- All business logic preserved (GeminiService, API clients unchanged)
+- Tool interfaces remain identical (no breaking changes for users)
+- Build system outputs ES2022 modules
+- Zod provides runtime type validation
+
+Fixes:
+- Resolves Node.js v24 ERR_MODULE_NOT_FOUND errors
+- Fixes TypeScript compilation with Response type ambiguity
+- Improves compatibility across Node.js 18, 20, 22, and 24
+
+Breaking: None (all existing tool interfaces work identically)
