@@ -1,6 +1,6 @@
 {
   "name": "@houtini/gemini-mcp",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "mcpName": "io.github.houtini-ai/gemini",
   "type": "module",
   "description": "Professional Model Context Protocol server for Google Gemini AI models with enterprise-grade features",
@@ -49,7 +49,7 @@
   ],
   "author": "Houtini",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/houtini-ai/gemini-mcp#readme",
+  "homepage": "https://houtini.com/gemini-mcp/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/houtini-ai/gemini-mcp.git"
@@ -83,6 +83,8 @@
     "dist/**/*",
     "README.md",
     "LICENSE",
+    "houtini-logo.jpg",
+    "server.json",
     ".env.example",
     "claude_desktop_config_example.json"
   ],
