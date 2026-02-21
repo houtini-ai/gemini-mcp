@@ -24,15 +24,19 @@ export const config: Config = {
         threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       }
     ],
-    defaultModel: 'gemini-3-pro-preview',
-    maxTokens: 16384,
-    temperature: 0.7,
+    defaultModel: 'gemini-3-flash-preview',               // chat / text
+    defaultImageAnalysisModel: 'gemini-3.1-pro-preview', // analyze_image
+    defaultImageDescribeModel: 'gemini-3-flash-preview', // describe_image
+    defaultImageGenerationModel: 'gemini-3-pro-image-preview', // generate_image / edit_image
+    maxTokens: 65536,
+    temperature: 1.0,
     defaultGrounding: true,
     allowExperimentalModels: process.env.GEMINI_ALLOW_EXPERIMENTAL === 'true'
   },
   server: {
     name: 'gemini-mcp',
-    version: '1.0.0'
+    version: '1.0.0',
+    imageOutputDir: process.env.GEMINI_IMAGE_OUTPUT_DIR
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',

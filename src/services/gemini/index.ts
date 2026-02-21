@@ -1,14 +1,29 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, Part } from '@google/generative-ai';
 import { BaseService } from '../base-service.js';
 import { GeminiConfig } from '../../config/types.js';
 import { 
-  ChatRequest, 
+  ChatRequest,
+  ImageAnalysisRequest,
   ChatResponse, 
   ListModelsResponse, 
   ModelInfo,
   GeminiGenerationConfig 
 } from './types.js';
 import { GeminiError } from '../../utils/error-handler.js';
+
+// Gemini 3+ models require temperature 1.0.
+// Google's docs warn lower values cause looping or degraded reasoning.
+// Gemini 3 also supports thinkingConfig.thinkingLevel.
+const GEMINI3_MODEL_PREFIXES = [
+  'gemini-3-pro',
+  'gemini-3-flash',
+  'gemini-3-pro-image',
+  'gemini-3.1-pro',
+];
+
+function isGemini3(modelName: string): boolean {
+  return GEMINI3_MODEL_PREFIXES.some(prefix => modelName.startsWith(prefix));
+}
 
 export class GeminiService extends BaseService {
   private genAI: GoogleGenerativeAI;
@@ -109,15 +124,29 @@ export class GeminiService extends BaseService {
       return null;
     }
 
-    let geminiModels = models.filter(m => 
-      m.name.toLowerCase().includes('gemini')
-    );
+    // Configured default wins unconditionally - no experimental filter applied
+    if (this.config.defaultModel) {
+      const configured = models.find(m => m.name === this.config.defaultModel);
+      if (configured) {
+        return configured.name;
+      }
+      // Not in discovered list but configured explicitly - trust the config
+      return this.config.defaultModel;
+    }
+
+    // Only Gemini 3+ models supported
+    let geminiModels = models.filter(m => {
+      const name = m.name.toLowerCase();
+      if (!name.includes('gemini')) return false;
+      const version = this.extractVersion(m.name);
+      return version >= 3;
+    });
 
     if (geminiModels.length === 0) {
       return models[0].name;
     }
 
-    // Filter out experimental/preview models unless explicitly allowed
+    // Filter out experimental/preview models for auto-discovery fallback only
     if (!this.config.allowExperimentalModels) {
       const stableModels = geminiModels.filter(m => {
         const name = m.name.toLowerCase();
@@ -127,7 +156,6 @@ export class GeminiService extends BaseService {
                !name.includes('-thinking-');
       });
       
-      // Use stable models if available, otherwise fall back to all models
       if (stableModels.length > 0) {
         geminiModels = stableModels;
       }
@@ -155,48 +183,39 @@ export class GeminiService extends BaseService {
   }
 
   private extractVersion(modelName: string): number {
-    const match = modelName.match(/(\d+\.?\d*)/);
+    // Match major.minor (e.g. 3.1) or major only (e.g. 3)
+    const match = modelName.match(/gemini-(\d+\.?\d*)/);
     return match ? parseFloat(match[1]) : 0;
   }
 
   private getFallbackModels(): ModelInfo[] {
     return [
+      // Gemini 3.1 family (newest)
       {
-        name: 'gemini-2.5-flash',
-        displayName: 'Gemini 2.5 Flash',
-        description: 'Latest Gemini 2.5 Flash - Fast, versatile performance',
+        name: 'gemini-3.1-pro-preview',
+        displayName: 'Gemini 3.1 Pro Preview',
+        description: 'Gemini 3.1 Pro — adaptive thinking, 1M context, agentic workflows (Feb 2026)',
         contextWindow: 1_000_000
       },
       {
-        name: 'gemini-2.0-flash',
-        displayName: 'Gemini 2.0 Flash', 
-        description: 'Gemini 2.0 Flash - Fast, efficient model',
+        name: 'gemini-3.1-pro-preview-customtools',
+        displayName: 'Gemini 3.1 Pro Preview (Custom Tools)',
+        description: 'Gemini 3.1 Pro optimised for custom tool usage',
+        contextWindow: 1_000_000
+      },
+      // Gemini 3 family
+      {
+        name: 'gemini-3-pro-preview',
+        displayName: 'Gemini 3 Pro Preview',
+        description: 'Gemini 3 Pro — advanced reasoning, 1M context',
         contextWindow: 1_000_000
       },
       {
-        name: 'gemini-1.5-flash',
-        displayName: 'Gemini 1.5 Flash',
-        description: 'Gemini 1.5 Flash - Fast, efficient model',
+        name: 'gemini-3-flash-preview',
+        displayName: 'Gemini 3 Flash Preview',
+        description: 'Gemini 3 Flash — frontier multimodal at Flash speed',
         contextWindow: 1_000_000
       },
-      {
-        name: 'gemini-1.5-pro',
-        displayName: 'Gemini 1.5 Pro',
-        description: 'Gemini 1.5 Pro - Advanced reasoning',
-        contextWindow: 2_000_000
-      },
-      {
-        name: 'gemini-pro',
-        displayName: 'Gemini Pro',
-        description: 'Gemini Pro - Balanced performance',
-        contextWindow: 32_000
-      },
-      {
-        name: 'gemini-pro-vision',
-        displayName: 'Gemini Pro Vision',
-        description: 'Gemini Pro Vision - Multimodal understanding',
-        contextWindow: 16_000
-      }
     ];
   }
 
@@ -274,61 +293,62 @@ export class GeminiService extends BaseService {
     try {
       await this.ensureModelsInitialized();
       
-      // Determine if grounding should be used
       const shouldUseGrounding = request.grounding ?? this.config.defaultGrounding;
       const modelName = request.model || this.defaultModel;
+      const gemini3 = isGemini3(modelName);
 
       this.logInfo(`Chat request to ${modelName}`, {
         messageLength: request.message.length,
         hasSystemPrompt: !!request.systemPrompt,
-        grounding: shouldUseGrounding
+        grounding: shouldUseGrounding,
+        gemini3,
+        thinkingLevel: request.thinkingLevel,
       });
-      
-      // Configure generation parameters
-      const generationConfig: GeminiGenerationConfig = {
-        temperature: request.temperature ?? this.config.temperature,
-        maxOutputTokens: request.maxTokens ?? this.config.maxTokens
+
+      // Gemini 3 docs: keep temperature at default 1.0.
+      // Values below 1.0 can cause looping or degraded reasoning.
+      const temperature = gemini3 ? 1.0 : (request.temperature ?? this.config.temperature);
+
+      const generationConfig: GeminiGenerationConfig & { thinkingConfig?: { thinkingLevel: string } } = {
+        temperature,
+        maxOutputTokens: request.maxTokens ?? this.config.maxTokens,
       };
 
-      // Initialize model with safety settings and optional grounding
+      if (gemini3 && request.thinkingLevel) {
+        generationConfig.thinkingConfig = { thinkingLevel: request.thinkingLevel };
+      }
+
       const modelConfig: any = {
         model: modelName,
         safetySettings: this.mapSafetySettings(),
-        generationConfig
+        generationConfig,
       };
 
-      // Add grounding tool if enabled
       if (shouldUseGrounding) {
         modelConfig.tools = [{ googleSearch: {} }];
       }
 
       const model = this.genAI.getGenerativeModel(modelConfig);
 
-      // Prepare prompt
-      const prompt = request.systemPrompt 
+      const prompt = request.systemPrompt
         ? `${request.systemPrompt}\n\nUser: ${request.message}\n\nAssistant:`
         : request.message;
 
-      // Generate response
       const result = await model.generateContent(prompt);
       const response = result.response;
 
-      // Check if response was blocked
       if (result.response.promptFeedback?.blockReason) {
-        const blockReason = result.response.promptFeedback.blockReason;
         throw new GeminiError(
-          `Response was blocked by safety filters. Reason: ${blockReason}. ` +
+          `Response was blocked by safety filters. Reason: ${result.response.promptFeedback.blockReason}. ` +
           'Try rephrasing your query or using different parameters.'
         );
       }
 
-      // Extract response text
       let responseText: string;
-      
+
       try {
         responseText = response.text();
       } catch {
-        // Handle cases where content was filtered
         const candidate = response.candidates?.[0];
         if (candidate?.finishReason) {
           const finishReasonMap: Record<string, string> = {
@@ -336,48 +356,38 @@ export class GeminiService extends BaseService {
             '2': 'SAFETY - Content was filtered',
             '3': 'MAX_TOKENS - Hit token limit',
             '4': 'UNSPECIFIED',
-            '5': 'OTHER'
+            '5': 'OTHER',
           };
-          
-          const reason = finishReasonMap[candidate.finishReason.toString()] || 
-                        `Unknown reason: ${candidate.finishReason}`;
-          
+          const reason = finishReasonMap[candidate.finishReason.toString()] ||
+            `Unknown reason: ${candidate.finishReason}`;
           throw new GeminiError(
             `Response was filtered. Finish reason: ${reason}\n\n` +
             'Try:\n1. Rephrasing your query\n2. Using a different model\n3. Adjusting temperature settings'
           );
         }
-        
         throw new GeminiError('No text content in response. The model may have filtered the content.');
       }
 
-      // Extract grounding metadata if available
       const candidate = response.candidates?.[0];
       const groundingMetadata = candidate?.groundingMetadata;
-
-      // Capture usage metadata from response
       const usageMetadata = response.usageMetadata;
 
-      // Debug log the grounding metadata structure
       if (groundingMetadata) {
         this.logInfo('Raw grounding metadata structure', {
           keys: Object.keys(groundingMetadata),
           webSearchQueries: groundingMetadata.webSearchQueries,
-          hasSearchQueries: !!groundingMetadata.webSearchQueries,
-          searchQueriesLength: groundingMetadata.webSearchQueries?.length || 0
+          searchQueriesLength: groundingMetadata.webSearchQueries?.length || 0,
         });
       }
 
-      // Log usage metadata
       if (usageMetadata) {
         this.logInfo('Token usage', {
           promptTokens: usageMetadata.promptTokenCount,
           candidatesTokens: usageMetadata.candidatesTokenCount,
-          totalTokens: usageMetadata.totalTokenCount
+          totalTokens: usageMetadata.totalTokenCount,
         });
       }
 
-      // Process inline citations if grounding metadata exists
       let processedContent = responseText;
       if (groundingMetadata) {
         processedContent = this.addInlineCitations(responseText, groundingMetadata);
@@ -389,7 +399,7 @@ export class GeminiService extends BaseService {
         timestamp: new Date().toISOString(),
         finishReason: response.candidates?.[0]?.finishReason?.toString(),
         groundingMetadata,
-        usageMetadata
+        usageMetadata,
       };
 
       this.logInfo('Chat response generated successfully', {
@@ -397,7 +407,7 @@ export class GeminiService extends BaseService {
         responseLength: responseText.length,
         finishReason: chatResponse.finishReason,
         hasGroundingMetadata: !!groundingMetadata,
-        searchQueries: groundingMetadata?.webSearchQueries?.length || 0
+        searchQueries: groundingMetadata?.webSearchQueries?.length || 0,
       });
 
       return chatResponse;
@@ -406,7 +416,6 @@ export class GeminiService extends BaseService {
       if (error instanceof GeminiError) {
         throw error;
       }
-      
       this.logError('Chat generation failed', error as Error);
       throw new GeminiError(`Error generating response: ${(error as Error).message}`);
     }
@@ -474,6 +483,63 @@ export class GeminiService extends BaseService {
       category: harmCategoryMap[setting.category],
       threshold: harmBlockThresholdMap[setting.threshold]
     }));
+  }
+
+  async analyzeImages(request: ImageAnalysisRequest): Promise<string> {
+    try {
+      await this.ensureModelsInitialized();
+
+      const modelName = request.model || this.config.defaultImageAnalysisModel;
+      const prompt = request.prompt || 'Describe this image in detail.';
+
+      this.logInfo(`analyzeImages request to ${modelName}`, {
+        imageCount: request.images.length,
+        promptLength: prompt.length
+      });
+
+      const generationConfig: GeminiGenerationConfig = {
+        temperature: request.temperature ?? this.config.temperature,
+        maxOutputTokens: request.maxTokens ?? 16384
+      };
+
+      const model = this.genAI.getGenerativeModel({
+        model: modelName,
+        safetySettings: this.mapSafetySettings(),
+        generationConfig
+      });
+
+      const parts: Part[] = request.images.map(img => ({
+        inlineData: {
+          data: img.data,
+          mimeType: img.mimeType
+        }
+      }));
+
+      parts.push({ text: prompt });
+
+      const result = await model.generateContent({ contents: [{ role: 'user', parts }] });
+      const response = result.response;
+
+      if (response.promptFeedback?.blockReason) {
+        throw new GeminiError(`Response blocked: ${response.promptFeedback.blockReason}`);
+      }
+
+      const text = response.text();
+
+      this.logInfo('analyzeImages completed', {
+        model: modelName,
+        responseLength: text.length
+      });
+
+      return text;
+
+    } catch (error) {
+      if (error instanceof GeminiError) {
+        throw error;
+      }
+      this.logError('analyzeImages failed', error as Error);
+      throw new GeminiError(`Error analyzing images: ${(error as Error).message}`);
+    }
   }
 
   getAvailableModels(): string[] {

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(ls \"C:\\\\MCP\\\\gemini-mcp\\\\dist\\\\services\\\\gemini\"\" && grep -n \"generate_image|edit_image|describe_image|GeminiImageService\" \"C:MCPgemini-mcpdistindex.js \")",
+      "Bash(C:\\\\Python313\\\\python.exe:*)",
+      "Bash(python:*)",
+      "Bash(php:*)",
+      "mcp__simracing-affiliate__search_simracing_products",
+      "Bash(C:/Python313/python.exe:*)",
+      "Bash(python3:*)",
+      "Bash(C:Python313python.exe \"C:/dev/content-machine/articles/simracingcockpit-sim-racing-dashboard/drafts/strip-draft.py\")",
+      "Bash(IMPLEMENTATION)",
+      "Bash(CHANGE \")",
+      "Bash(xargs ls:*)",
+      "Bash(cross-env INPUT=src/ui/image-viewer.html OUT_DIR=dist/image-viewer npx vite build:*)",
+      "Bash(INPUT=src/ui/image-viewer.html OUT_DIR=dist/image-viewer npx vite build:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
