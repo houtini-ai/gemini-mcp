@@ -5,6 +5,56 @@ All notable changes to @houtini/gemini-mcp will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-02-21
+
+### Added
+- **Search Grounding for Images**: `generate_image` and `edit_image` tools now support `use_search` parameter
+  - Enables real-time data integration from Google Search before image generation
+  - Perfect for weather forecasts, stock charts, news-driven visuals, sports scores
+  - Response includes grounding sources as markdown links showing which websites informed the image
+  - Grounding metadata extracted from API response: `groundingChunks`, `webSearchQueries`
+  - Added to tool responses and logging for full transparency
+
+- **Media Resolution Control**: Comprehensive token cost optimization across all image tools
+  - `MEDIA_RESOLUTION_LOW` — 280 tokens per image (75% savings vs default)
+  - `MEDIA_RESOLUTION_MEDIUM` — 560 tokens per image (50% savings vs default)
+  - `MEDIA_RESOLUTION_HIGH` — 1120 tokens per image (default quality)
+  - `MEDIA_RESOLUTION_ULTRA_HIGH` — 2000+ tokens per image (maximum detail, per-image only)
+  - Global setting via `global_media_resolution` parameter (applies to all images)
+  - Per-image override via `mediaResolution` in images array
+  - Supported in: `generate_image`, `edit_image`, `describe_image`, `analyze_image`
+  - OCR quality saturates at MEDIUM for PDFs — use MEDIUM for 50% cost reduction with zero quality loss
+
+### Changed
+- `GeminiImageResponse` interface expanded to include `groundingMetadata` structure
+- `GeneratedImageResult` interface now includes optional `groundingSources` array
+- Tool responses display grounding sources as numbered markdown links when available
+- Structured content responses include `groundingSources` for UI integration
+
+### Technical Details
+- Grounding sources extracted from `groundingChunks.web.uri` and `groundingChunks.web.title`
+- Media resolution passed to API via `generationConfig.mediaResolution` (global) and per-part `mediaResolution` (override)
+- Full backward compatibility — both features are opt-in with sensible defaults
+- No breaking changes to existing tool signatures or response formats
+
+## [2.0.0] - 2026-02-22
+
+### Breaking Changes
+- **Thinking Level Enum Fixed**: `thinking_level` parameter now uses UPPERCASE values ('LOW', 'MEDIUM', 'HIGH', 'MINIMAL') to match Gemini API requirements
+  - **Previous (broken)**: lowercase values ('low', 'medium', 'high', 'minimal') were rejected by API
+  - **Now (working)**: UPPERCASE enum values as per official Gemini API specification
+  - **Impact**: Any code explicitly passing `thinking_level` with lowercase values will break
+  - **Migration**: Update all `thinking_level` calls to use UPPERCASE: `thinking_level: 'HIGH'` instead of `thinking_level: 'high'`
+
+### Added
+- **Thinking Level Exposed**: `gemini_chat` tool now exposes `thinking_level` parameter for Gemini 3 models
+  - Controls reasoning depth: 'LOW' (minimal latency), 'MEDIUM'/'MINIMAL' (Gemini 3 Flash only), 'HIGH' (maximum reasoning)
+  - Only affects Gemini 3+ models, ignored for earlier versions
+  - Temperature automatically set to 1.0 for Gemini 3 models regardless of user input (API requirement)
+
+### Fixed
+- **Thinking levels now functional**: Previous implementation used incorrect lowercase enum, causing all thinking level requests to fail silently
+
 ## [1.5.0] - 2026-02-21
 
 ### Added

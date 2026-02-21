@@ -102,6 +102,47 @@ Use gemini:generate_image with:
 
 Default model is `gemini-3-pro-image-preview` (Nano Banana Pro). Also supports `gemini-2.5-flash-image` for faster generation at higher volume.
 
+**Search grounding for data-driven images** — Enable real-time data integration in generated images:
+
+```
+Use gemini:generate_image with:
+  prompt="Weather forecast visualization for London tomorrow with actual temperatures"
+  use_search=true
+```
+
+When `use_search` is enabled, Gemini searches Google for current data before generating the image. Perfect for:
+- Weather forecasts with real temperatures
+- Stock charts with current market data
+- News-driven infographics
+- Sports scores and statistics
+
+The response includes grounding sources as markdown links showing which websites informed the image.
+
+**Media resolution control for cost optimization** — Reduce token usage by up to 75%:
+
+```
+Use gemini:generate_image with:
+  prompt="Analyze this PDF"
+  images=[{data: pdfBase64, mimeType: "application/pdf"}]
+  global_media_resolution="MEDIA_RESOLUTION_MEDIUM"
+```
+
+Resolution levels and token costs:
+- `MEDIA_RESOLUTION_LOW` — 280 tokens per image (75% savings) — Simple tasks, bulk operations
+- `MEDIA_RESOLUTION_MEDIUM` — 560 tokens per image (50% savings) — PDFs/documents (OCR quality saturates here)
+- `MEDIA_RESOLUTION_HIGH` — 1120 tokens per image (default) — Best quality, detailed analysis
+- `MEDIA_RESOLUTION_ULTRA_HIGH` — 2000+ tokens per image (per-image only) — Maximum detail work
+
+Set `global_media_resolution` to apply to all images, or override per-image in the `images` array:
+
+```
+Use gemini:generate_image with:
+  images=[
+    {data: simpleIcon, mimeType: "image/png", mediaResolution: "MEDIA_RESOLUTION_LOW"},
+    {data: detailedDiagram, mimeType: "image/png", mediaResolution: "MEDIA_RESOLUTION_ULTRA_HIGH"}
+  ]
+```
+
 **Where do images go?** By default, the tool returns the image as base64 data — Claude renders it inline in the conversation. If you set `GEMINI_IMAGE_OUTPUT_DIR` in your config, every generated image saves automatically to that directory as a PNG, and the tool returns the file path alongside the inline preview. For anything you want to keep, set the output directory. Base64 inline has a ~1MB size limit and won't persist beyond the conversation.
 
 ```json

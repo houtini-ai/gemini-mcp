@@ -491,6 +491,15 @@ class GeminiMcpServer {
         'Thought signature from a previous generate_image or edit_image response. ' +
         'Required for conversational editing with gemini-3-pro-image-preview.'
       ),
+      mediaResolution: z.enum([
+        'MEDIA_RESOLUTION_LOW',
+        'MEDIA_RESOLUTION_MEDIUM',
+        'MEDIA_RESOLUTION_HIGH',
+        'MEDIA_RESOLUTION_ULTRA_HIGH'
+      ]).optional().describe(
+        'Per-image resolution override. LOW=280 tokens (75% savings), MEDIUM=560 tokens (50% savings), ' +
+        'HIGH=1120 tokens (default), ULTRA_HIGH=2000+ tokens (max detail, per-image only)'
+      )
     });
 
     // Register generate_image tool using MCP Apps for inline preview
@@ -519,6 +528,27 @@ class GeminiMcpServer {
           images: z.array(imageInputSchema)
             .optional()
             .describe('Optional reference images to guide generation'),
+          use_search: z.boolean()
+            .optional()
+            .default(false)
+            .describe(
+              'Enable Google Search grounding for data-driven image generation. ' +
+              'Use for: weather forecasts, current events, stock prices, sports scores, statistics. ' +
+              'The model will search the web for real-time data to inform image generation.'
+            ),
+          global_media_resolution: z.enum([
+            'MEDIA_RESOLUTION_LOW',
+            'MEDIA_RESOLUTION_MEDIUM',
+            'MEDIA_RESOLUTION_HIGH'
+          ])
+            .optional()
+            .describe(
+              'Global image quality setting for cost optimization (default: HIGH). ' +
+              'LOW (280 tokens, 75% savings) - Simple tasks, bulk operations. ' +
+              'MEDIUM (560 tokens, 50% savings) - PDFs/documents (OCR saturates at medium). ' +
+              'HIGH (1120 tokens) - Best quality, detailed analysis. ' +
+              'Can be overridden per-image using mediaResolution in images array.'
+            ),
           outputPath: z.string()
             .optional()
             .describe('Optional file path to save the generated image (e.g., ./output/image.png)'),
@@ -529,13 +559,23 @@ class GeminiMcpServer {
           }
         }
       },
-      async ({ prompt, model, aspectRatio, imageSize, images, outputPath }) => {
+      async ({ prompt, model, aspectRatio, imageSize, images, use_search, global_media_resolution, outputPath }) => {
         try {
-          logger.info('Executing generate_image tool', { model, promptLength: prompt.length });
+          logger.info('Executing generate_image tool', { 
+            model, 
+            promptLength: prompt.length,
+            useSearch: use_search,
+            globalMediaResolution: global_media_resolution
+          });
 
           const result = await this.imageService.generateImage({
-            prompt, model, aspectRatio, imageSize,
-            images: images as { data: string; mimeType: string; thoughtSignature?: string }[],
+            prompt, 
+            model, 
+            aspectRatio, 
+            imageSize,
+            images: images as any,
+            useSearch: use_search,
+            globalMediaResolution: global_media_resolution as any
           });
 
           const firstImage = result.parts.find(p => p.type === 'image' && p.base64Data);
@@ -592,6 +632,14 @@ class GeminiMcpServer {
           if (savedPath) textLines.push(`Image saved to: ${savedPath}`);
           if (previewPath) textLines.push(`HTML preview: ${previewPath}`);
           if (result.description) textLines.push(`\n${result.description}`);
+          
+          // Add grounding sources if available
+          if (result.groundingSources && result.groundingSources.length > 0) {
+            textLines.push('\n**Sources used for grounding:**');
+            result.groundingSources.forEach((source, idx) => {
+              textLines.push(`${idx + 1}. [${source.title}](${source.url})`);
+            });
+          }
 
           // Return for MCP Apps with structuredContent for inline preview
           return {
@@ -601,7 +649,8 @@ class GeminiMcpServer {
               savedPath,
               previewPath,
               description: result.description,
-              prompt
+              prompt,
+              groundingSources: result.groundingSources
             },
             content: [
               { 
@@ -640,6 +689,17 @@ class GeminiMcpServer {
           model: z.string()
             .optional()
             .describe('Gemini image model to use (default: gemini-3-pro-image-preview)'),
+          use_search: z.boolean()
+            .optional()
+            .default(false)
+            .describe('Enable Google Search grounding for data-driven editing'),
+          global_media_resolution: z.enum([
+            'MEDIA_RESOLUTION_LOW',
+            'MEDIA_RESOLUTION_MEDIUM',
+            'MEDIA_RESOLUTION_HIGH'
+          ])
+            .optional()
+            .describe('Global image quality setting (default: HIGH). See generate_image for details.'),
           outputPath: z.string()
             .optional()
             .describe('Optional file path to save the edited image (e.g., ./output/edited.png)'),
@@ -650,13 +710,21 @@ class GeminiMcpServer {
           }
         }
       },
-      async ({ prompt, images, model, outputPath }) => {
+      async ({ prompt, images, model, use_search, global_media_resolution, outputPath }) => {
         try {
-          logger.info('Executing edit_image tool', { model, imageCount: images.length });
+          logger.info('Executing edit_image tool', { 
+            model, 
+            imageCount: images.length,
+            useSearch: use_search,
+            globalMediaResolution: global_media_resolution
+          });
 
           const result = await this.imageService.generateImage({
-            prompt, model,
-            images: images as { data: string; mimeType: string; thoughtSignature?: string }[],
+            prompt, 
+            model,
+            images: images as any,
+            useSearch: use_search,
+            globalMediaResolution: global_media_resolution as any
           });
 
           const firstImage = result.parts.find(p => p.type === 'image' && p.base64Data);
@@ -712,6 +780,14 @@ class GeminiMcpServer {
           if (savedPath) textLines.push(`Image saved to: ${savedPath}`);
           if (previewPath) textLines.push(`HTML preview: ${previewPath}`);
           if (result.description) textLines.push(`\n${result.description}`);
+          
+          // Add grounding sources if available
+          if (result.groundingSources && result.groundingSources.length > 0) {
+            textLines.push('\n**Sources used for grounding:**');
+            result.groundingSources.forEach((source, idx) => {
+              textLines.push(`${idx + 1}. [${source.title}](${source.url})`);
+            });
+          }
 
           // Return for MCP Apps with structuredContent for inline preview
           return {
@@ -721,7 +797,8 @@ class GeminiMcpServer {
               savedPath,
               previewPath,
               description: result.description,
-              prompt: `[EDIT] ${prompt}`
+              prompt: `[EDIT] ${prompt}`,
+              groundingSources: result.groundingSources
             },
             content: [
               { 
@@ -760,19 +837,32 @@ class GeminiMcpServer {
           model: z.string()
             .optional()
             .describe('Gemini image model to use (default: gemini-3-flash-preview)'),
+          global_media_resolution: z.enum([
+            'MEDIA_RESOLUTION_LOW',
+            'MEDIA_RESOLUTION_MEDIUM',
+            'MEDIA_RESOLUTION_HIGH'
+          ])
+            .optional()
+            .describe('Global image quality for cost optimization. MEDIUM recommended for PDFs (50% savings).'),
         },
         outputSchema: {
           content: z.string(),
           success: z.boolean(),
         },
       },
-      async ({ images, prompt, model }) => {
+      async ({ images, prompt, model, global_media_resolution }) => {
         try {
-          logger.info('Executing describe_image tool', { model, imageCount: images.length });
+          logger.info('Executing describe_image tool', { 
+            model, 
+            imageCount: images.length,
+            globalMediaResolution: global_media_resolution
+          });
 
           const description = await this.imageService.describeImage({
-            images: images as { data: string; mimeType: string }[],
-            prompt, model,
+            images: images as any,
+            prompt, 
+            model,
+            globalMediaResolution: global_media_resolution as any
           });
 
           return {
@@ -814,22 +904,34 @@ class GeminiMcpServer {
             .max(65536)
             .optional()
             .default(16384)
-            .describe('Maximum tokens in response (default 16384, up to 64K output limit)')
+            .describe('Maximum tokens in response (default 16384, up to 64K output limit)'),
+          global_media_resolution: z.enum([
+            'MEDIA_RESOLUTION_LOW',
+            'MEDIA_RESOLUTION_MEDIUM',
+            'MEDIA_RESOLUTION_HIGH'
+          ])
+            .optional()
+            .describe('Global image quality for cost optimization. MEDIUM recommended for PDFs (50% savings).')
         },
         outputSchema: {
           content: z.string(),
           success: z.boolean()
         }
       },
-      async ({ images, prompt, model, max_tokens }) => {
+      async ({ images, prompt, model, max_tokens, global_media_resolution }) => {
         try {
-          logger.info('Executing analyze_image tool', { model, imageCount: images.length });
+          logger.info('Executing analyze_image tool', { 
+            model, 
+            imageCount: images.length,
+            globalMediaResolution: global_media_resolution
+          });
 
           const result = await this.geminiService.analyzeImages({
-            images: images as { data: string; mimeType: string }[],
+            images: images as any,
             prompt,
             model: model || 'gemini-3-pro-preview',
-            maxTokens: max_tokens
+            maxTokens: max_tokens,
+            globalMediaResolution: global_media_resolution
           });
 
           return {

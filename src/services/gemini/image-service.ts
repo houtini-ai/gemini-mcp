@@ -33,12 +33,20 @@ const DEFAULT_IMAGE_DESCRIBE_MODEL = 'gemini-3-flash-preview';
 export type AspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
 export type ImageSize = '1K' | '2K' | '4K';
 
+export type MediaResolution = 
+  | 'MEDIA_RESOLUTION_LOW'       // 280 tokens - ~75% savings
+  | 'MEDIA_RESOLUTION_MEDIUM'    // 560 tokens - ~50% savings  
+  | 'MEDIA_RESOLUTION_HIGH'      // 1120 tokens - default
+  | 'MEDIA_RESOLUTION_ULTRA_HIGH'; // 2000+ tokens - max detail
+
 export interface ImageInput {
   data: string;
   mimeType: string;
   // Optional: thought signature from a previous generation turn.
   // Required for conversational editing with gemini-3-pro-image-preview.
   thoughtSignature?: string;
+  // Optional: per-image media resolution override
+  mediaResolution?: MediaResolution;
 }
 
 export interface GenerateImageOptions {
@@ -49,12 +57,18 @@ export interface GenerateImageOptions {
   // Reference images. For conversational editing, pass the parts returned
   // by the previous call (including their thoughtSignatures).
   images?: ImageInput[];
+  // Enable Google Search grounding for data-driven image generation
+  useSearch?: boolean;
+  // Global media resolution setting (excludes ULTRA_HIGH which is per-image only)
+  globalMediaResolution?: Exclude<MediaResolution, 'MEDIA_RESOLUTION_ULTRA_HIGH'>;
 }
 
 export interface DescribeImageOptions {
   images: ImageInput[];
   prompt?: string;
   model?: string;
+  // Global media resolution for all images (cost optimization)
+  globalMediaResolution?: Exclude<MediaResolution, 'MEDIA_RESOLUTION_ULTRA_HIGH'>;
 }
 
 // ─── Internal request/response shapes ───────────────────────────────────────
@@ -63,6 +77,7 @@ interface GeminiPart {
   text?: string;
   inlineData?: { mimeType: string; data: string };
   thoughtSignature?: string;
+  mediaResolution?: string;
 }
 
 interface GeminiContent {
@@ -78,12 +93,32 @@ interface GeminiImageRequest {
       aspectRatio?: string;
       imageSize?: string;
     };
+    mediaResolution?: string;
   };
+  tools?: Array<{ google_search: Record<string, never> }>;
 }
 
 interface GeminiImageResponse {
   candidates?: Array<{
     content: { parts: GeminiPart[] };
+    groundingMetadata?: {
+      groundingSupports?: Array<{
+        segment: { startIndex?: number; endIndex?: number; text?: string };
+        groundingChunkIndices?: number[];
+        confidenceScores?: number[];
+      }>;
+      groundingChunks?: Array<{
+        web?: {
+          uri?: string;
+          title?: string;
+        };
+      }>;
+      webSearchQueries?: string[];
+      searchEntryPoint?: {
+        renderedContent?: string;
+      };
+      retrievalMetadata?: any;
+    };
   }>;
   error?: { code: number; message: string; status: string };
 }
@@ -129,6 +164,12 @@ export class GeminiImageService extends BaseService {
         const part: GeminiPart = {
           inlineData: { mimeType: img.mimeType, data: img.data },
         };
+        
+        // Add per-image media resolution if specified
+        if (img.mediaResolution) {
+          part.mediaResolution = img.mediaResolution;
+        }
+        
         if (img.thoughtSignature) {
           part.thoughtSignature = img.thoughtSignature;
         }
@@ -158,13 +199,21 @@ export class GeminiImageService extends BaseService {
               },
             }
           : {}),
+        ...(options.globalMediaResolution && {
+          mediaResolution: options.globalMediaResolution
+        })
       },
+      ...(options.useSearch && {
+        tools: [{ google_search: {} }]
+      })
     };
 
     this.logInfo('Generating image', {
       model,
       prompt: options.prompt.slice(0, 80),
       hasReferenceImages: !!(options.images?.length),
+      useSearch: options.useSearch,
+      globalMediaResolution: options.globalMediaResolution
     });
 
     const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${this.apiKey}`;
@@ -222,10 +271,32 @@ export class GeminiImageService extends BaseService {
       .map(p => p.text)
       .join('') || undefined;
 
+    // Extract grounding sources if search was enabled
+    let groundingSources: Array<{ url: string; title: string }> | undefined;
+    if (options.useSearch && data.candidates[0].groundingMetadata) {
+      const metadata = data.candidates[0].groundingMetadata;
+      const chunks = metadata.groundingChunks || [];
+      
+      groundingSources = chunks
+        .filter(chunk => chunk.web?.uri && chunk.web?.title)
+        .map(chunk => ({
+          url: chunk.web!.uri!,
+          title: chunk.web!.title!
+        }));
+      
+      if (groundingSources.length > 0) {
+        this.logInfo('Grounding sources found', {
+          sourceCount: groundingSources.length,
+          queries: metadata.webSearchQueries
+        });
+      }
+    }
+
     this.logInfo('Image generated successfully', {
       mimeType: firstImage.mimeType,
       partsCount: responseParts.length,
       hasSignatures: responseParts.some(p => !!p.thoughtSignature),
+      hasGroundingSources: !!(groundingSources?.length)
     });
 
     return {
@@ -233,6 +304,7 @@ export class GeminiImageService extends BaseService {
       mimeType: firstImage.mimeType,
       base64Data: firstImage.base64Data,
       description,
+      groundingSources
     };
   }
 
@@ -247,12 +319,21 @@ export class GeminiImageService extends BaseService {
     const prompt = options.prompt || 'Describe this image in detail. What do you see?';
 
     // Description is text-only — no IMAGE modality needed
-    const body = {
+    const body: any = {
       contents: this.buildContents(prompt, options.images),
-      generationConfig: { responseModalities: ['TEXT'] },
+      generationConfig: { 
+        responseModalities: ['TEXT'],
+        ...(options.globalMediaResolution && {
+          mediaResolution: options.globalMediaResolution
+        })
+      },
     };
 
-    this.logInfo('Describing image', { model, imageCount: options.images.length });
+    this.logInfo('Describing image', { 
+      model, 
+      imageCount: options.images.length,
+      globalMediaResolution: options.globalMediaResolution
+    });
 
     const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${this.apiKey}`;
     const response = await fetch(url, {
