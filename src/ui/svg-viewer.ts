@@ -1,49 +1,41 @@
 import { App } from '@modelcontextprotocol/ext-apps';
 
-interface ThoughtSignaturePart {
-  type: string;
-  thoughtSignature: string;
-}
-
-interface ImageResult {
-  base64Data: string;
-  mimeType: string;
+interface SVGResult {
+  svgContent: string;
   savedPath?: string;
-  previewPath?: string;
-  thoughtSignaturePath?: string; // Path to saved thought signature file
   description?: string;
   prompt?: string;
-  thoughtSignatures?: ThoughtSignaturePart[]; // Legacy field (not used)
 }
 
-const app = new App({ name: 'Gemini Image Viewer', version: '1.0.0' });
+const app = new App({ name: 'Gemini SVG Viewer', version: '1.0.0' });
 
-app.ontoolresult = (result: { structuredContent?: ImageResult }) => {
+app.ontoolresult = (result: { structuredContent?: SVGResult }) => {
   const data = result.structuredContent;
-  if (!data || !data.base64Data) return;
+  if (!data || !data.svgContent) return;
   render(data);
 };
 
 app.connect();
 
-function render(data: ImageResult) {
+function render(data: SVGResult) {
   const loading = document.getElementById('loading')!;
   const content = document.getElementById('content')!;
-  const img = document.getElementById('img') as HTMLImageElement;
+  const svgContainer = document.getElementById('svg-container')!;
   const pathDisplay = document.getElementById('path-display')!;
   const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
   const descEl = document.getElementById('desc')!;
   const promptEl = document.getElementById('prompt')!;
   const promptTextEl = document.getElementById('prompt-text')!;
 
-  img.src = `data:${data.mimeType};base64,${data.base64Data}`;
+  // Render SVG content
+  svgContainer.innerHTML = data.svgContent;
 
+  // Display file path if saved
   if (data.savedPath) {
     pathDisplay.textContent = data.savedPath;
     copyBtn.style.display = 'block';
     copyBtn.addEventListener('click', async () => {
       try {
-        // Try modern clipboard API first
         await navigator.clipboard.writeText(data.savedPath!);
         copyBtn.textContent = 'Copied!';
         copyBtn.classList.add('copied');
@@ -52,7 +44,6 @@ function render(data: ImageResult) {
           copyBtn.classList.remove('copied');
         }, 2000);
       } catch (err) {
-        // Fallback: Create temporary input and use execCommand
         const tempInput = document.createElement('input');
         tempInput.value = data.savedPath!;
         tempInput.style.position = 'absolute';
@@ -80,11 +71,13 @@ function render(data: ImageResult) {
     pathDisplay.innerHTML = '<span class="no-path">Not saved to disk</span>';
   }
 
+  // Display description if available
   if (data.description) {
     descEl.textContent = data.description;
     descEl.style.display = 'block';
   }
 
+  // Display prompt if available
   if (data.prompt) {
     promptTextEl.textContent = data.prompt;
     promptEl.style.display = 'block';

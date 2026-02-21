@@ -1,6 +1,7 @@
 import { GroundingMetadata } from '@google/generative-ai';
 
-export type ThinkingLevel = 'low' | 'medium' | 'high' | 'minimal';
+// Gemini API requires UPPERCASE enum values for thinkingConfig.thinkingLevel
+export type ThinkingLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'MINIMAL';
 
 export interface ChatRequest {
   message: string;
@@ -14,11 +15,12 @@ export interface ChatRequest {
 
 export interface ImageAnalysisRequest {
   prompt: string;
-  images: Array<{ data: string; mimeType: string }>;
+  images: Array<{ data: string; mimeType: string; mediaResolution?: string }>;
   model?: string;
   temperature?: number;
   maxTokens?: number;
   systemPrompt?: string;
+  globalMediaResolution?: string;
 }
 
 export interface UsageMetadata {
@@ -76,4 +78,9 @@ export interface GeneratedImageResult {
   mimeType: string;
   base64Data: string;
   description?: string;
+  // Grounding sources when search is enabled
+  groundingSources?: Array<{
+    url: string;
+    title: string;
+  }>;
 }

@@ -45,6 +45,11 @@ export class GeminiChatTool {
             type: 'boolean',
             default: true,
             description: 'Enable Google Search grounding for real-time information'
+          },
+          thinking_level: {
+            type: 'string',
+            enum: ['LOW', 'MEDIUM', 'HIGH', 'MINIMAL'],
+            description: 'Thinking depth for Gemini 3 models only. "LOW" minimises latency for simple tasks. "HIGH" (default for Gemini 3) maximises reasoning depth. "MEDIUM"/"MINIMAL" available on Gemini 3 Flash only. Ignored for non-Gemini-3 models.'
           }
         },
         required: ['message']
@@ -69,7 +74,8 @@ export class GeminiChatTool {
         temperature: args.temperature,
         maxTokens: args.max_tokens,
         systemPrompt: args.system_prompt,
-        grounding: args.grounding
+        grounding: args.grounding,
+        thinkingLevel: args.thinking_level
       });
 
       return createToolResult(true, response.content);

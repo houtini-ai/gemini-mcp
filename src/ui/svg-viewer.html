@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemini Image Viewer</title>
+  <title>Gemini SVG Viewer</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -38,14 +38,27 @@
 
     #content { display: none; width: 100%; max-width: 900px; }
 
-    .image-wrap {
+    .svg-wrap {
       width: 100%;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      background: var(--panel);
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    img { width: 100%; height: auto; display: block; }
+    #svg-container { 
+      max-width: 100%;
+      max-height: 600px;
+    }
+
+    #svg-container svg {
+      max-width: 100%;
+      height: auto;
+    }
 
     .meta {
       width: 100%;
@@ -130,10 +143,10 @@
   </style>
 </head>
 <body>
-  <div id="loading">Waiting for image…</div>
+  <div id="loading">Waiting for SVG…</div>
   <div id="content">
-    <div class="image-wrap">
-      <img id="img" src="" alt="Generated image" />
+    <div class="svg-wrap">
+      <div id="svg-container"></div>
     </div>
     <div class="meta">
       <div class="meta-row">
@@ -148,6 +161,6 @@
     </div>
   </div>
 
-  <script type="module" src="./image-viewer.ts"></script>
+  <script type="module" src="./svg-viewer.ts"></script>
 </body>
 </html>

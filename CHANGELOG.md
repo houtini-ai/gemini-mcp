@@ -5,123 +5,164 @@ All notable changes to @houtini/gemini-mcp will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - 2025-02-21
+## [2.2.0] - 2025-02-21
 
 ### Added
-- **Search Grounding for Images**: `generate_image` and `edit_image` tools now support `use_search` parameter
-  - Enables real-time data integration from Google Search before image generation
-  - Perfect for weather forecasts, stock charts, news-driven visuals, sports scores
-  - Response includes grounding sources as markdown links showing which websites informed the image
-  - Grounding metadata extracted from API response: `groundingChunks`, `webSearchQueries`
-  - Added to tool responses and logging for full transparency
-
-- **Media Resolution Control**: Comprehensive token cost optimization across all image tools
-  - `MEDIA_RESOLUTION_LOW` — 280 tokens per image (75% savings vs default)
-  - `MEDIA_RESOLUTION_MEDIUM` — 560 tokens per image (50% savings vs default)
-  - `MEDIA_RESOLUTION_HIGH` — 1120 tokens per image (default quality)
-  - `MEDIA_RESOLUTION_ULTRA_HIGH` — 2000+ tokens per image (maximum detail, per-image only)
-  - Global setting via `global_media_resolution` parameter (applies to all images)
-  - Per-image override via `mediaResolution` in images array
-  - Supported in: `generate_image`, `edit_image`, `describe_image`, `analyze_image`
-  - OCR quality saturates at MEDIUM for PDFs — use MEDIUM for 50% cost reduction with zero quality loss
-
-### Changed
-- `GeminiImageResponse` interface expanded to include `groundingMetadata` structure
-- `GeneratedImageResult` interface now includes optional `groundingSources` array
-- Tool responses display grounding sources as numbered markdown links when available
-- Structured content responses include `groundingSources` for UI integration
-
-### Technical Details
-- Grounding sources extracted from `groundingChunks.web.uri` and `groundingChunks.web.title`
-- Media resolution passed to API via `generationConfig.mediaResolution` (global) and per-part `mediaResolution` (override)
-- Full backward compatibility — both features are opt-in with sensible defaults
-- No breaking changes to existing tool signatures or response formats
-
-## [2.0.0] - 2026-02-22
-
-### Breaking Changes
-- **Thinking Level Enum Fixed**: `thinking_level` parameter now uses UPPERCASE values ('LOW', 'MEDIUM', 'HIGH', 'MINIMAL') to match Gemini API requirements
-  - **Previous (broken)**: lowercase values ('low', 'medium', 'high', 'minimal') were rejected by API
-  - **Now (working)**: UPPERCASE enum values as per official Gemini API specification
-  - **Impact**: Any code explicitly passing `thinking_level` with lowercase values will break
-  - **Migration**: Update all `thinking_level` calls to use UPPERCASE: `thinking_level: 'HIGH'` instead of `thinking_level: 'high'`
-
-### Added
-- **Thinking Level Exposed**: `gemini_chat` tool now exposes `thinking_level` parameter for Gemini 3 models
-  - Controls reasoning depth: 'LOW' (minimal latency), 'MEDIUM'/'MINIMAL' (Gemini 3 Flash only), 'HIGH' (maximum reasoning)
-  - Only affects Gemini 3+ models, ignored for earlier versions
-  - Temperature automatically set to 1.0 for Gemini 3 models regardless of user input (API requirement)
-
-### Fixed
-- **Thinking levels now functional**: Previous implementation used incorrect lowercase enum, causing all thinking level requests to fail silently
-
-## [1.5.0] - 2026-02-21
-
-### Added
-- **MCP Apps Support**: Proper inline image preview in Claude Desktop using `@modelcontextprotocol/ext-apps`
-  - `generate_image` and `edit_image` now use `registerAppTool()` instead of standard `registerTool()`
-  - Self-contained image viewer UI (no Vite build required - single HTML file with CDN imports)
-  - Images display inline in chat with metadata (path, description, prompt)
-  - Compressed JPEG previews (~150KB) sent to UI while full resolution saved to disk
-  - Falls back gracefully for non-Apps MCP clients
+- **Video generation** (`generate_video` tool) using Google Veo 3.1
+  - Creates 4-8 second videos from text prompts
+  - Async job-based workflow with automatic polling (2-5 minutes)
+  - Support for 720p, 1080p, and 4K resolutions
+  - Native audio generation synchronized with video (automatic based on prompt)
+  - Optional first-frame image and reference images for character/style consistency
+  - Automatic thumbnail extraction (requires ffmpeg)
+  - Interactive HTML video player generation
+  - **Inline video viewer** - Videos display directly in Claude Desktop
+  - Multiple aspect ratios: 16:9 (landscape) and 9:16 (portrait)
+- **Video viewer UI** - Built-in video player with inline preview in Claude Desktop
+- **SVG viewer UI** - Inline SVG preview and rendering in Claude Desktop
+- **Help system** (`gemini_help` tool) with comprehensive documentation for all features
+  - Topics: overview, image_generation, image_editing, image_analysis, chat, deep_research, grounding, media_resolution, models, all
+  - Accessible without leaving Claude Desktop
+- **Professional chart design systems** (9 systems) in `gemini_prompt_assistant`
+  - Storytelling (Cole Nussbaumer Knaflic) - Strategic highlighting
+  - Financial (Financial Times) - FT Pink editorial elegance
+  - Terminal (Bloomberg/Fintech) - High-density electric neon on black
+  - Modernist (W.E.B. Du Bois) - Bold geometric blocks
+  - Professional (IBM Carbon/Tailwind) - Enterprise UI
+  - Editorial (FiveThirtyEight/Economist) - Data journalism
+  - Scientific (Nature/Science) - Academic rigor
+  - Minimal (Edward Tufte) - Maximum data-ink ratio
+  - Dark (Observable) - Modern dark mode
+- Complete colour palettes, typography specs, and design rules for each system
+- Enhanced `gemini_prompt_assistant` with design system templates
 
 ### Changed
-- **Updated SDK**: `@modelcontextprotocol/sdk` from ^1.25.3 to ^1.27.0 for latest MCP Apps support
-- **Build simplified**: Removed Vite build step - image viewer is now single self-contained HTML file
-- **Return format**: `generate_image` and `edit_image` now return `structuredContent` for UI preview plus `content` for LLM/fallback
-- **Removed thoughtSignatures from response**: No longer returned to Claude to save tokens (850KB → 0KB), use file-based editing instead
+- **Image quality improvements**: Quality 100 @ 1024px (was quality 60 @ 512px)
+  - Dramatically better text readability in technical diagrams
+  - Professional-grade output quality
+  - No visible JPEG compression artifacts
+- **Default model upgrades**:
+  - `gemini_chat`: Now defaults to `gemini-3.1-pro-preview` (was gemini-3-flash-preview)
+  - `analyze_image`: Now defaults to `gemini-3.1-pro-preview` (was gemini-3-flash-preview)
+  - Noticeable quality improvements in reasoning and analysis
+- **Grounding source display**: Sources now formatted as markdown links in responses
+- Updated README with comprehensive feature documentation
 
 ### Fixed
-- Async tool registration moved from constructor to `start()` method to support UI resource loading
-- TypeScript compilation now includes DOM types for fetch API support
-
-### Technical Details
-- UI resource registered as `ui://gemini/image-viewer.html` with `RESOURCE_MIME_TYPE`
-- Image viewer uses `@modelcontextprotocol/ext-apps` from esm.sh CDN (no build step)
-- `_meta.ui.resourceUri` links tools to viewer component
-- Full backward compatibility - works with and without MCP Apps support
-
-## [1.4.6] - 2026-02-20
-
-### Fixed
-- **`describe_image` bug**: Tool was validating models against the image generation allowlist (`IMAGE_GENERATION_MODELS`) rather than the broader vision allowlist. This caused all `describe_image` calls without an explicit model to throw immediately, since the default describe model (`gemini-3-flash-preview`) wasn't in the generation list. Introduced separate `IMAGE_GENERATION_MODELS` and `IMAGE_VISION_MODELS` constants and updated `validateModel()` to use the correct list per operation type.
-
-### Changed
-- **`image-service.ts`**: Expanded `IMAGE_MODELS` to include all models valid for generation or vision tasks — `gemini-3-flash-preview`, `gemini-3-pro-preview`, `gemini-3.1-pro-preview`, plus the existing generation models. The combined `IMAGE_MODELS` export is retained for backwards compatibility.
-- **`gemini/index.ts`**: Removed duplicate `isGemini3Model` function and `GEMINI3_PREFIXES` constant. Both were identical to the existing `isGemini3` / `GEMINI3_MODEL_PREFIXES` declarations. Dead code.
+- Grounding sources properly extracted and displayed for financial and news queries
+- Image preview quality issues resolved
+- Video tool registration uses correct MCP SDK patterns (removed deprecated setRequestHandler)
+- TypeScript compilation errors in video service configuration
+- **Video generation API compatibility**: Removed `generateAudio` parameter from Veo 3.1 API requests
+  - Veo 3.1 generates audio natively based on prompt content (no toggle needed)
+  - Tool parameter `generateAudio` now controls audio via negative prompting when set to `false`
+  - Fixes 400 "isn't supported by this model" errors from Gemini API
 
 ### Documentation
-- **README rewritten**: Complete overhaul — now covers all 9 tools with working examples, full environment variable table (including `GEMINI_IMAGE_OUTPUT_DIR`, `GEMINI_ALLOW_EXPERIMENTAL`, `DEBUG_MCP`, `GEMINI_MCP_LOG_FILE`), thought signature workflow for conversational image editing, and Claude Desktop timeout guidance for deep research.
+- Complete README.md rewrite with all v2.2.0 features
+- Added chart design system quick reference
+- Added search grounding coverage table
+- Documented weather grounding limitation (API-level, not code issue)
+- Created comprehensive test results (TEST_RESULTS_v2.1.1.md)
 
-## [1.4.5] - Previous release
-
-## [1.4.3] - 2025-01-29
-
-### Fixed
-- **Logger Path Issue (#1)**: Fixed ENOENT error when running via npx on macOS/Unix systems
-  - File logging now disabled by default to avoid directory permission issues
-  - Logs only created when explicitly enabled via `GEMINI_MCP_LOG_FILE=true` environment variable
-  - When enabled, logs are written to user home directory (`~/.gemini-mcp/logs/` on Unix, `C:\Users\username\.gemini-mcp\logs\` on Windows)
-  - Console logging (stderr) only enabled in development mode or when `DEBUG_MCP=true`
-  - Fallback to minimal error logging if directory creation fails
-  - Cross-platform compatible with proper path handling for Windows, macOS, and Linux
-
-### Changed
-- Logging behaviour is now opt-in rather than default-on
-- All console output goes to stderr to avoid corrupting MCP stdio communication
-- Log directory uses user home directory for better cross-platform compatibility
+## [2.1.0] - 2025-02-20
 
 ### Added
-- New environment variable: `GEMINI_MCP_LOG_FILE` (default: false) - Enable file logging
-- New environment variable: `DEBUG_MCP` (default: false) - Enable console debugging
-- Comprehensive logging documentation in README.md
-- Graceful fallback when log directory creation fails
+- **Help system** (`gemini_help` tool) with comprehensive documentation for all features
+  - Topics: overview, image_generation, image_editing, image_analysis, chat, deep_research, grounding, media_resolution, models, all
+  - Accessible without leaving Claude Desktop
+- **Professional chart design systems** (9 systems) in `gemini_prompt_assistant`
+  - Storytelling (Cole Nussbaumer Knaflic) - Strategic highlighting
+  - Financial (Financial Times) - FT Pink editorial elegance
+  - Terminal (Bloomberg/Fintech) - High-density electric neon on black
+  - Modernist (W.E.B. Du Bois) - Bold geometric blocks
+  - Professional (IBM Carbon/Tailwind) - Enterprise UI
+  - Editorial (FiveThirtyEight/Economist) - Data journalism
+  - Scientific (Nature/Science) - Academic rigor
+  - Minimal (Edward Tufte) - Maximum data-ink ratio
+  - Dark (Observable) - Modern dark mode
+- Complete colour palettes, typography specs, and design rules for each system
+- Enhanced `gemini_prompt_assistant` with design system templates
 
-### Technical Details
-- Logger now uses `os.homedir()` and `path.join()` for cross-platform paths
-- Recursive directory creation with proper error handling
-- Log files: 5MB max size, 5 files retained (rotating logs)
-- No breaking changes — all existing configurations continue to work
+### Changed
+- **Image quality improvements**: Quality 100 @ 1024px (was quality 60 @ 512px)
+  - Dramatically better text readability in technical diagrams
+  - Professional-grade output quality
+  - No visible JPEG compression artifacts
+- **Default model upgrades**:
+  - `gemini_chat`: Now defaults to `gemini-3.1-pro-preview` (was gemini-3-flash-preview)
+  - `analyze_image`: Now defaults to `gemini-3.1-pro-preview` (was gemini-3-flash-preview)
+  - Noticeable quality improvements in reasoning and analysis
+- **Grounding source display**: Sources now formatted as markdown links in responses
+- Updated README with comprehensive feature documentation
 
-### Thanks
-- @mattjohnsonpint for reporting the macOS logger path issue
+### Fixed
+- Grounding sources properly extracted and displayed for financial and news queries
+- Image preview quality issues resolved
+
+### Documentation
+- Complete README.md rewrite with all v2.2.0 features
+- Added chart design system quick reference
+- Added search grounding coverage table
+- Documented weather grounding limitation (API-level, not code issue)
+- Created comprehensive test results (TEST_RESULTS_v2.1.1.md)
+
+## [2.1.0] - 2025-02-20
+
+### Added
+- **Search grounding for image generation** (`use_search` parameter)
+  - Real-time data integration in generated images
+  - Grounding sources returned as metadata
+  - Perfect for weather, stocks, news-driven infographics
+- **Media resolution control** for cost optimization
+  - `MEDIA_RESOLUTION_LOW` - 280 tokens (75% savings)
+  - `MEDIA_RESOLUTION_MEDIUM` - 560 tokens (50% savings)
+  - `MEDIA_RESOLUTION_HIGH` - 1120 tokens (default)
+  - `MEDIA_RESOLUTION_ULTRA_HIGH` - 2000+ tokens (max detail)
+  - Global and per-image resolution settings
+- **Thought signatures** for conversational image editing
+  - Maintained across editing turns for visual continuity
+  - Automatic capture and return in responses
+- Multiple image model support
+  - `gemini-3-pro-image-preview` (Nano Banana Pro)
+  - `gemini-2.5-flash-image` (faster generation)
+  - `gemini-3-flash-preview` (descriptions)
+  - `gemini-3.1-pro-preview` (detailed analysis)
+
+### Changed
+- Image service refactored with separate generation/vision model handling
+- Enhanced error handling for image operations
+- Improved media resolution documentation
+
+## [2.0.0] - 2025-01-15
+
+### Added
+- Initial public release
+- `gemini_chat` - Chat with Google Search grounding
+- `gemini_deep_research` - Multi-step iterative research
+- `generate_image` - Image generation via Gemini
+- `edit_image` - Natural language image editing
+- `describe_image` - Image description and analysis
+- `analyze_image` - Structured image information extraction
+- `load_image_from_path` - Local image file loading
+- `generate_landing_page` - Self-contained HTML generation
+- `gemini_list_models` - Available model listing
+- Configurable output directories for generated images
+- Thinking level support for Gemini 3 models
+- MCP Apps integration with inline image previews
+
+### Configuration
+- `GEMINI_API_KEY` - Required API key
+- `GEMINI_DEFAULT_MODEL` - Model selection
+- `GEMINI_DEFAULT_GROUNDING` - Grounding preference
+- `GEMINI_IMAGE_OUTPUT_DIR` - Image save location
+- `GEMINI_ALLOW_EXPERIMENTAL` - Experimental model access
+- `DEBUG_MCP` - Debug logging
+
+---
+
+## Version History Summary
+
+- **v2.2.0** - Help system, quality improvements, chart design systems, default model upgrades
+- **v2.1.0** - Search grounding, media resolution, thought signatures, multi-model
+- **v2.0.0** - Initial release with core features

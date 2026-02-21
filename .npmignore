@@ -1,0 +1,56 @@
+# Source files
+src/
+
+# Development docs
+*-handover*.md
+*-test*.md
+*-session*.md
+*-summary*.md
+TEST_*.md
+IMPLEMENTATION_*.md
+SESSION_*.md
+RELEASE_*.md
+THOUGHT_*.md
+API_ANALYSIS_*.md
+TOOL_REGISTRATION_*.ts
+commit-msg.txt
+docs/
+
+# Config files
+tsconfig*.json
+jest.config.js
+.eslintrc.js
+vite.config.ts
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Output
+test-output/
+output/
+logs/
+
+# Tests
+__tests__/
+*.test.ts
+*.spec.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Development helpers
+*.bat
+*.backup
+
+# Misc
+*.log
+.env*
+!.env.example
+
+# Keep only production files
+# The 'files' field in package.json defines what gets published

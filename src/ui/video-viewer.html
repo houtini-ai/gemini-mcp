@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemini Image Viewer</title>
+  <title>Gemini Video Viewer</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -38,14 +38,19 @@
 
     #content { display: none; width: 100%; max-width: 900px; }
 
-    .image-wrap {
+    .video-wrap {
       width: 100%;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      background: #000;
     }
 
-    img { width: 100%; height: auto; display: block; }
+    video { 
+      width: 100%; 
+      height: auto; 
+      display: block;
+    }
 
     .meta {
       width: 100%;
@@ -97,11 +102,21 @@
       background: transparent;
     }
 
-    .desc {
+    .specs {
       margin-top: 8px;
       color: var(--text-secondary);
       font-size: 13px;
       line-height: 1.6;
+    }
+
+    .spec-item {
+      display: inline-block;
+      margin-right: 16px;
+    }
+
+    .spec-label {
+      color: var(--text-secondary);
+      font-weight: 600;
     }
 
     .prompt {
@@ -130,17 +145,20 @@
   </style>
 </head>
 <body>
-  <div id="loading">Waiting for image…</div>
+  <div id="loading">Waiting for video…</div>
   <div id="content">
-    <div class="image-wrap">
-      <img id="img" src="" alt="Generated image" />
+    <div class="video-wrap">
+      <video id="video" controls>
+        <source id="video-source" src="" type="video/mp4">
+        Your browser does not support the video element.
+      </video>
     </div>
     <div class="meta">
       <div class="meta-row">
         <div id="path-display" class="path"></div>
         <button id="copy-btn" class="copy-btn" style="display:none">Copy path</button>
       </div>
-      <div id="desc" class="desc" style="display:none"></div>
+      <div id="specs" class="specs" style="display:none"></div>
       <div id="prompt" class="prompt" style="display:none">
         <div class="prompt-label">Prompt</div>
         <div id="prompt-text"></div>
@@ -148,6 +166,6 @@
     </div>
   </div>
 
-  <script type="module" src="./image-viewer.ts"></script>
+  <script type="module" src="./video-viewer.ts"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 {
   "name": "@houtini/gemini-mcp",
-  "version": "1.5.0",
+  "version": "2.2.0",
   "mcpName": "io.github.houtini-ai/gemini",
   "type": "module",
   "description": "Professional Model Context Protocol server for Google Gemini AI models with enterprise-grade features",
@@ -19,7 +19,11 @@
   },
   "scripts": {
     "build:server": "tsc -p tsconfig.server.json",
-    "build:ui": "cross-env INPUT=src/ui/image-viewer.html OUT_DIR=dist/image-viewer vite build",
+    "build:ui:image": "cross-env INPUT=src/ui/image-viewer.html OUT_DIR=dist/image-viewer vite build",
+    "build:ui:video": "cross-env INPUT=src/ui/video-viewer.html OUT_DIR=dist/video-viewer vite build",
+    "build:ui:svg": "cross-env INPUT=src/ui/svg-viewer.html OUT_DIR=dist/svg-viewer vite build",
+    "build:ui:landing-page": "cross-env INPUT=src/ui/landing-page-viewer.html OUT_DIR=dist/landing-page-viewer vite build",
+    "build:ui": "npm run build:ui:image && npm run build:ui:video && npm run build:ui:svg && npm run build:ui:landing-page",
     "build": "npm run build:server && npm run build:ui",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
@@ -66,7 +70,8 @@
     "dotenv": "^16.4.5",
     "sharp": "^0.34.5",
     "winston": "^3.14.0",
-    "zod": "^3.25.0"
+    "zod": "^3.25.0",
+    "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

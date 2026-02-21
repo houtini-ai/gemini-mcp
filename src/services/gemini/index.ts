@@ -10,6 +10,7 @@ import {
   GeminiGenerationConfig 
 } from './types.js';
 import { GeminiError } from '../../utils/error-handler.js';
+import { GeminiVideoService, GenerateVideoOptions, GeneratedVideoResult } from './video-service.js';
 
 // Gemini 3+ models require temperature 1.0.
 // Google's docs warn lower values cause looping or degraded reasoning.
@@ -32,8 +33,9 @@ export class GeminiService extends BaseService {
   private defaultModel: string;
   private modelsInitialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
+  private videoService: GeminiVideoService;
 
-  constructor(config: GeminiConfig) {
+  constructor(config: GeminiConfig, outputDir?: string) {
     super();
     this.config = config;
     
@@ -44,6 +46,7 @@ export class GeminiService extends BaseService {
     this.genAI = new GoogleGenerativeAI(config.apiKey);
     this.defaultModel = config.defaultModel;
     this.availableModels = this.getFallbackModels();
+    this.videoService = new GeminiVideoService(config, outputDir);
     
     this.logInfo('Gemini service initialized');
   }
@@ -494,12 +497,16 @@ export class GeminiService extends BaseService {
 
       this.logInfo(`analyzeImages request to ${modelName}`, {
         imageCount: request.images.length,
-        promptLength: prompt.length
+        promptLength: prompt.length,
+        globalMediaResolution: request.globalMediaResolution
       });
 
-      const generationConfig: GeminiGenerationConfig = {
+      const generationConfig: any = {
         temperature: request.temperature ?? this.config.temperature,
-        maxOutputTokens: request.maxTokens ?? 16384
+        maxOutputTokens: request.maxTokens ?? 16384,
+        ...(request.globalMediaResolution && {
+          mediaResolution: request.globalMediaResolution
+        })
       };
 
       const model = this.genAI.getGenerativeModel({
@@ -508,12 +515,21 @@ export class GeminiService extends BaseService {
         generationConfig
       });
 
-      const parts: Part[] = request.images.map(img => ({
-        inlineData: {
-          data: img.data,
-          mimeType: img.mimeType
+      const parts: Part[] = request.images.map(img => {
+        const part: any = {
+          inlineData: {
+            data: img.data,
+            mimeType: img.mimeType
+          }
+        };
+        
+        // Add per-image media resolution if specified
+        if (img.mediaResolution) {
+          part.mediaResolution = img.mediaResolution;
         }
-      }));
+        
+        return part;
+      });
 
       parts.push({ text: prompt });
 
@@ -549,5 +565,13 @@ export class GeminiService extends BaseService {
   getModelContextWindow(modelName: string): number {
     const model = this.availableModels.find(m => m.name === modelName);
     return model?.contextWindow || 32_000;
+  }
+
+  async generateVideo(options: GenerateVideoOptions): Promise<GeneratedVideoResult> {
+    return this.videoService.generateVideo(options);
+  }
+
+  getVideoService(): GeminiVideoService {
+    return this.videoService;
   }
 }

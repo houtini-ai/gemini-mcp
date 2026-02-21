@@ -151,8 +151,9 @@ export class GeminiImageService extends BaseService {
   }
 
   // Build a GeminiContent[] from prompt + optional reference images.
-  // When reference images carry thoughtSignatures (conversational editing),
-  // they are attached to the corresponding inlineData part as required by the API.
+  // For conversational editing: thoughtSignature alone is sufficient - we can
+  // omit/empty the base64 data to save massive bandwidth and token usage.
+  // Per Gemini API docs: "include mimeType but can leave data field empty if thoughtSignature present"
   private buildContents(
     prompt: string,
     images?: ImageInput[]
@@ -161,19 +162,32 @@ export class GeminiImageService extends BaseService {
 
     if (images?.length) {
       for (const img of images) {
-        const part: GeminiPart = {
-          inlineData: { mimeType: img.mimeType, data: img.data },
-        };
-        
-        // Add per-image media resolution if specified
-        if (img.mediaResolution) {
-          part.mediaResolution = img.mediaResolution;
-        }
-        
+        // If we have a thoughtSignature, use signature-only mode
+        // This saves ~2-3MB of base64 data per image (500K+ tokens)
         if (img.thoughtSignature) {
-          part.thoughtSignature = img.thoughtSignature;
+          const part: GeminiPart = {
+            thoughtSignature: img.thoughtSignature,
+            // Include mimeType for output format, but omit data field
+            inlineData: { mimeType: img.mimeType, data: '' }
+          };
+          
+          if (img.mediaResolution) {
+            part.mediaResolution = img.mediaResolution;
+          }
+          
+          userParts.push(part);
+        } else {
+          // No signature = first-time upload, include full image data
+          const part: GeminiPart = {
+            inlineData: { mimeType: img.mimeType, data: img.data }
+          };
+          
+          if (img.mediaResolution) {
+            part.mediaResolution = img.mediaResolution;
+          }
+          
+          userParts.push(part);
         }
-        userParts.push(part);
       }
     }
 

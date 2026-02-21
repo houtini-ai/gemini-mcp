@@ -2,16 +2,17 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.houtini-ai/gemini",
   "description": "Model Context Protocol server for Google Gemini AI with chat, research, and grounding",
+  "icon": "houtini-logo.jpg",
   "repository": {
     "url": "https://github.com/houtini-ai/gemini-mcp",
     "source": "github"
   },
-  "version": "1.4.2",
+  "version": "2.1.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@houtini/gemini-mcp",
-      "version": "1.4.2",
+      "version": "2.1.4",
       "transport": {
         "type": "stdio"
       },

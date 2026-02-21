@@ -9,9 +9,10 @@ const MAX_PREVIEW_DIMENSION = 1024;
 const PREVIEW_QUALITY = 72;
 
 // Viewer thumbnail — small enough to never exceed 1MB tool result limit
-const MAX_VIEWER_DIMENSION = 512;
-const VIEWER_QUALITY = 60;
-const MAX_VIEWER_BYTES = 150_000;
+// Maximum quality - just resize to fit, no compression loss
+const MAX_VIEWER_DIMENSION = 1024;
+const VIEWER_QUALITY = 100;
+const MAX_VIEWER_BYTES = 400_000;
 
 export interface CompressResult {
   base64: string;
@@ -112,7 +113,7 @@ export async function compressForViewer(
     .toBuffer();
 
   if (outputBuffer.length > MAX_VIEWER_BYTES) {
-    for (const quality of [45, 30, 20]) {
+    for (const quality of [95, 90, 85]) {
       const retryBuffer = await sharp(inputBuffer)
         .resize(MAX_VIEWER_DIMENSION, MAX_VIEWER_DIMENSION, {
           fit: 'inside',

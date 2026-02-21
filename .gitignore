@@ -99,3 +99,21 @@ temp/
 tmp/
 *.tmp
 *.temp
+
+# Development artifacts
+*-handover*.md
+*-test*.md
+*-session*.md
+*-summary*.md
+TEST_*.md
+IMPLEMENTATION_*.md
+SESSION_*.md
+RELEASE_*.md
+THOUGHT_*.md
+API_ANALYSIS_*.md
+TOOL_REGISTRATION_*.ts
+commit-msg.txt
+
+# Output directories
+test-output/
+output/

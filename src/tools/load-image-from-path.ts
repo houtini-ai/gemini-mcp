@@ -16,6 +16,7 @@ export interface LoadedImage {
   mimeType: string;
   filePath: string;
   sizeBytes: number;
+  thoughtSignature?: string;
 }
 
 export async function loadImageFromPath(filePath: string): Promise<LoadedImage> {
@@ -36,10 +37,23 @@ export async function loadImageFromPath(filePath: string): Promise<LoadedImage> 
     throw new GeminiError(`Failed to read image file: ${(error as Error).message}`);
   }
 
+  // Try to load corresponding thought signature file if it exists
+  // Thought signatures enable conversational editing with gemini-3-pro-image-preview
+  const signaturePath = absolutePath.replace(/\.(png|jpg|jpeg|webp|gif|bmp)$/i, '.json');
+  let thoughtSignature: string | undefined;
+  
+  try {
+    thoughtSignature = await readFile(signaturePath, 'utf-8');
+  } catch {
+    // Thought signature file doesn't exist - this is fine, not all images have them
+    thoughtSignature = undefined;
+  }
+
   return {
     data: buffer.toString('base64'),
     mimeType,
     filePath: absolutePath,
     sizeBytes: buffer.length,
+    thoughtSignature,
   };
 }

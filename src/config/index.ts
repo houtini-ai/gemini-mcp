@@ -24,9 +24,9 @@ export const config: Config = {
         threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       }
     ],
-    defaultModel: 'gemini-3-flash-preview',               // chat / text
+    defaultModel: 'gemini-3.1-pro-preview',               // chat / text
     defaultImageAnalysisModel: 'gemini-3.1-pro-preview', // analyze_image
-    defaultImageDescribeModel: 'gemini-3-flash-preview', // describe_image
+    defaultImageDescribeModel: 'gemini-3.1-pro-preview', // describe_image
     defaultImageGenerationModel: 'gemini-3-pro-image-preview', // generate_image / edit_image
     maxTokens: 65536,
     temperature: 1.0,
