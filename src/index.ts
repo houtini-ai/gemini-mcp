@@ -35,6 +35,14 @@ async function saveImageToFile(base64Data: string, outputPath: string): Promise<
   return absolutePath;
 }
 
+async function saveThoughtSignature(imagePath: string, thoughtSignature?: string): Promise<string | undefined> {
+  if (!thoughtSignature) return undefined;
+  
+  const signaturePath = imagePath.replace(/\.(png|jpg|jpeg|webp)$/i, '-thoughtSignature.txt');
+  await writeFile(signaturePath, thoughtSignature, 'utf-8');
+  return signaturePath;
+}
+
 async function createImagePreviewHtml(
   imagePath: string, 
   prompt: string, 
@@ -541,12 +549,17 @@ class GeminiMcpServer {
 
           let savedPath: string | undefined;
           let previewPath: string | undefined;
+          let signaturePath: string | undefined;
           let previewImageData: string | undefined;
           
           // Always save when we have image data
           if (firstImage?.base64Data) {
             // Save full-resolution image to disk
             savedPath = await saveImageToFile(firstImage.base64Data, resolvedSavePath);
+            
+            // Save thoughtSignature if present (enables conversational editing)
+            // Saved as separate txt file to avoid processing by LLM (can be large)
+            signaturePath = await saveThoughtSignature(savedPath, firstImage.thoughtSignature);
             
             // Wait for filesystem to flush (prevents race condition)
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -656,12 +669,17 @@ class GeminiMcpServer {
 
           let savedPath: string | undefined;
           let previewPath: string | undefined;
+          let signaturePath: string | undefined;
           let previewImageData: string | undefined;
           
           // Always save when we have image data
           if (firstImage?.base64Data) {
             // Save full-resolution image to disk
             savedPath = await saveImageToFile(firstImage.base64Data, resolvedSavePath);
+            
+            // Save thoughtSignature if present (enables conversational editing)
+            // Saved as separate txt file to avoid processing by LLM (can be large)
+            signaturePath = await saveThoughtSignature(savedPath, firstImage.thoughtSignature);
             
             // Wait for filesystem to flush (prevents race condition)
             await new Promise(resolve => setTimeout(resolve, 100));
