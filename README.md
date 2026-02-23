@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@houtini/gemini-mcp)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?style=flat-square)](https://registry.modelcontextprotocol.io)
+${badge_line}
 
 **I've been running this MCP server in my Claude Desktop setup for several months, and it's one of the few I leave enabled permanently.** Not because Gemini replaces Claude -- it doesn't -- but because grounded search, deep research, image generation, and video are things Gemini does well. Having them as tools inside Claude beats switching between browser tabs.
 
