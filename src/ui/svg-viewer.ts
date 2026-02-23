@@ -1,4 +1,6 @@
 import { App } from '@modelcontextprotocol/ext-apps';
+import Panzoom, { type PanzoomObject } from '@panzoom/panzoom';
+import { setupPathCopy, showDescription, showPrompt, showContent } from './shared.js';
 
 interface SVGResult {
   svgContent: string;
@@ -20,69 +22,61 @@ app.connect();
 function render(data: SVGResult) {
   const loading = document.getElementById('loading')!;
   const content = document.getElementById('content')!;
-  const svgContainer = document.getElementById('svg-container')!;
+  const container = document.getElementById('panzoom-container')!;
   const pathDisplay = document.getElementById('path-display')!;
   const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
   const descEl = document.getElementById('desc')!;
   const promptEl = document.getElementById('prompt')!;
   const promptTextEl = document.getElementById('prompt-text')!;
+  const zoomInBtn = document.getElementById('zoom-in')!;
+  const zoomOutBtn = document.getElementById('zoom-out')!;
+  const zoomResetBtn = document.getElementById('zoom-reset')!;
+  const zoomLevelEl = document.getElementById('zoom-level')!;
 
-  // Render SVG content
-  svgContainer.innerHTML = data.svgContent;
+  // Render SVG inline
+  container.innerHTML = data.svgContent;
 
-  // Display file path if saved
-  if (data.savedPath) {
-    pathDisplay.textContent = data.savedPath;
-    copyBtn.style.display = 'block';
-    copyBtn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(data.savedPath!);
-        copyBtn.textContent = 'Copied!';
-        copyBtn.classList.add('copied');
-        setTimeout(() => {
-          copyBtn.textContent = 'Copy path';
-          copyBtn.classList.remove('copied');
-        }, 2000);
-      } catch (err) {
-        const tempInput = document.createElement('input');
-        tempInput.value = data.savedPath!;
-        tempInput.style.position = 'absolute';
-        tempInput.style.left = '-9999px';
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        try {
-          document.execCommand('copy');
-          copyBtn.textContent = 'Copied!';
-          copyBtn.classList.add('copied');
-          setTimeout(() => {
-            copyBtn.textContent = 'Copy path';
-            copyBtn.classList.remove('copied');
-          }, 2000);
-        } catch (fallbackErr) {
-          copyBtn.textContent = 'Copy failed';
-          setTimeout(() => {
-            copyBtn.textContent = 'Copy path';
-          }, 2000);
-        }
-        document.body.removeChild(tempInput);
-      }
-    });
-  } else {
-    pathDisplay.innerHTML = '<span class="no-path">Not saved to disk</span>';
+  // Initialize panzoom on the container
+  const pz: PanzoomObject = Panzoom(container, {
+    maxScale: 10,
+    minScale: 0.1,
+    contain: 'outside',
+    canvas: true,
+  });
+
+  // Mouse wheel zoom on the svg-wrap parent
+  const svgWrap = container.parentElement!;
+  svgWrap.addEventListener('wheel', (e) => {
+    pz.zoomWithWheel(e);
+    updateZoomLevel();
+  });
+
+  function updateZoomLevel() {
+    const scale = pz.getScale();
+    zoomLevelEl.textContent = `${Math.round(scale * 100)}%`;
   }
 
-  // Display description if available
-  if (data.description) {
-    descEl.textContent = data.description;
-    descEl.style.display = 'block';
-  }
+  zoomInBtn.addEventListener('click', () => {
+    pz.zoomIn();
+    updateZoomLevel();
+  });
 
-  // Display prompt if available
-  if (data.prompt) {
-    promptTextEl.textContent = data.prompt;
-    promptEl.style.display = 'block';
-  }
+  zoomOutBtn.addEventListener('click', () => {
+    pz.zoomOut();
+    updateZoomLevel();
+  });
 
-  loading.style.display = 'none';
-  content.style.display = 'block';
+  zoomResetBtn.addEventListener('click', () => {
+    pz.reset();
+    setTimeout(updateZoomLevel, 300);
+  });
+
+  // Listen for panzoom events to keep level display in sync
+  container.addEventListener('panzoomchange', () => updateZoomLevel());
+
+  // Path, description, prompt
+  setupPathCopy(data.savedPath, pathDisplay, copyBtn);
+  showDescription(data.description, descEl);
+  showPrompt(data.prompt, promptEl, promptTextEl);
+  showContent(loading, content);
 }

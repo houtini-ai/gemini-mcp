@@ -7,12 +7,28 @@
   <style>
     :root {
       color-scheme: light dark;
-      --bg: var(--color-background-primary, Canvas);
-      --panel: var(--color-background-secondary, ButtonFace);
-      --text: var(--color-text-primary, CanvasText);
-      --text-secondary: var(--color-text-secondary, GrayText);
-      --border: var(--color-border-default, #333);
-      --accent: var(--color-accent-primary, #6ee7b7);
+      /* Light mode defaults */
+      --bg: var(--color-background-primary, #ffffff);
+      --panel: var(--color-background-secondary, #f3f4f6);
+      --text: var(--color-text-primary, #1a1a1a);
+      --text-secondary: var(--color-text-secondary, #6b7280);
+      --border: var(--color-border-default, #d1d5db);
+      --accent: var(--color-accent-primary, #059669);
+      /* Landing page viewport backgrounds */
+      --viewport-bg: #ffffff;
+      --wrapper-bg: #f0f0f0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: var(--color-background-primary, #111827);
+        --panel: var(--color-background-secondary, #1f2937);
+        --text: var(--color-text-primary, #f3f4f6);
+        --text-secondary: var(--color-text-secondary, #9ca3af);
+        --border: var(--color-border-default, #374151);
+        --accent: var(--color-accent-primary, #6ee7b7);
+        --viewport-bg: #1a1a2e;
+        --wrapper-bg: #0f0f23;
+      }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,10 +51,11 @@
       font-size: 14px;
     }
 
-    #content { 
-      display: none; 
+    #content {
+      display: none;
       flex-direction: column;
       height: 100vh;
+      overflow: hidden;
     }
 
     .toolbar {
@@ -98,15 +115,18 @@
     .preview-container {
       flex: 1;
       overflow: auto;
-      background: white;
+      background: var(--viewport-bg);
       position: relative;
+      min-height: 0; /* allow flex child to shrink and scroll */
     }
 
     iframe {
       width: 100%;
-      height: 100%;
       border: none;
       display: block;
+      /* Start tall so landing page content is visible immediately;
+         JS will auto-resize to exact content height after load. */
+      min-height: 100%;
     }
 
     .resize-buttons {
@@ -132,32 +152,40 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding: 20px;
       min-height: 100%;
-      background: #f5f5f5;
+      background: var(--viewport-bg);
+    }
+
+    /* In device modes, add padding around the "device frame" */
+    .viewport-wrapper.device-mode {
+      padding: 24px;
+      background: var(--wrapper-bg);
     }
 
     .viewport {
       background: white;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
+      transition: width 0.3s ease;
       width: 100%;
-      min-height: 100%;
+    }
+
+    /* Device modes get shadow + constrained width */
+    .viewport.mobile,
+    .viewport.tablet {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      border-radius: 8px;
+      overflow: hidden;
     }
 
     .viewport.mobile {
       width: 375px;
-      min-height: 667px;
     }
 
     .viewport.tablet {
       width: 768px;
-      min-height: 1024px;
     }
 
     .viewport.desktop {
       width: 100%;
-      min-height: 100%;
     }
   </style>
 </head>

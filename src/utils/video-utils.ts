@@ -1,14 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
-
-export interface VideoMetadata {
-  duration: number;
-  width: number;
-  height: number;
-  codec: string;
-  fps: number;
-}
+import logger from './logger.js';
 
 export interface ThumbnailOptions {
   videoPath: string;
@@ -18,10 +11,6 @@ export interface ThumbnailOptions {
   height?: number;
 }
 
-/**
- * Extract a thumbnail from a video file using ffmpeg
- * Note: Requires ffmpeg to be installed and available in PATH
- */
 export async function extractThumbnail(options: ThumbnailOptions): Promise<string | undefined> {
   const {
     videoPath,
@@ -31,16 +20,14 @@ export async function extractThumbnail(options: ThumbnailOptions): Promise<strin
     height = 360
   } = options;
 
-  // Check if ffmpeg is available
   const hasFFmpeg = await checkFFmpegAvailable();
   
   if (!hasFFmpeg) {
-    console.warn('ffmpeg not found in PATH - thumbnail extraction skipped');
+    logger.warn('ffmpeg not found in PATH - thumbnail extraction skipped');
     return undefined;
   }
 
-  // Generate output path if not provided
-  const thumbnailPath = outputPath || 
+  const thumbnailPath = outputPath ||
     videoPath.replace(/\.(mp4|webm)$/, '-thumbnail.jpg');
 
   return new Promise((resolve, reject) => {
@@ -65,21 +52,18 @@ export async function extractThumbnail(options: ThumbnailOptions): Promise<strin
       if (code === 0) {
         resolve(thumbnailPath);
       } else {
-        console.warn('ffmpeg thumbnail extraction failed:', stderr);
+        logger.warn('ffmpeg thumbnail extraction failed', { stderr });
         resolve(undefined);
       }
     });
 
     ffmpeg.on('error', (error) => {
-      console.warn('ffmpeg spawn error:', error.message);
+      logger.warn('ffmpeg spawn error', { error: error.message });
       resolve(undefined);
     });
   });
 }
 
-/**
- * Check if ffmpeg is available in PATH
- */
 async function checkFFmpegAvailable(): Promise<boolean> {
   return new Promise((resolve) => {
     const ffmpeg = spawn('ffmpeg', ['-version']);
@@ -94,9 +78,6 @@ async function checkFFmpegAvailable(): Promise<boolean> {
   });
 }
 
-/**
- * Generate an HTML video player for local preview
- */
 export function generateVideoPlayerHTML(
   videoPath: string,
   thumbnailPath?: string,
@@ -368,9 +349,6 @@ export function generateVideoPlayerHTML(
 </html>`;
 }
 
-/**
- * Save HTML player to file
- */
 export async function saveVideoPlayerHTML(
   htmlContent: string,
   outputPath?: string

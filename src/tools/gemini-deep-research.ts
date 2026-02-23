@@ -1,4 +1,4 @@
-import { Tool, TextContent } from '@modelcontextprotocol/sdk/types.js';
+import { TextContent } from '@modelcontextprotocol/sdk/types.js';
 import { GeminiService } from '../services/gemini/index.js';
 import { createToolResult, McpError } from '../utils/error-handler.js';
 import logger from '../utils/logger.js';
@@ -13,41 +13,6 @@ interface ResearchStep {
 
 export class GeminiDeepResearchTool {
   constructor(private geminiService: GeminiService) {}
-
-  getDefinition(): Tool {
-    return {
-      name: 'gemini_deep_research',
-      description: 'Conduct deep research on complex topics using iterative multi-step analysis with Gemini. This performs multiple searches and synthesizes comprehensive research reports (takes several minutes). [MCP_RECOMMENDED_TIMEOUT_MS: 900000]',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          research_question: {
-            type: 'string',
-            description: 'The complex research question or topic to investigate deeply'
-          },
-          model: {
-            type: 'string',
-            default: this.geminiService.getDefaultModel(),
-            enum: this.geminiService.getAvailableModels(),
-            description: 'Model to use for deep research (defaults to latest available)'
-          },
-          max_iterations: {
-            type: 'integer',
-            default: 5,
-            minimum: 3,
-            maximum: 10,
-            description: 'Number of research iterations (3-10, default 5). Environment guidance: Claude Desktop: use 3-4 (4-min timeout). Agent SDK/IDEs (VSCode, Cursor, Windsurf)/AI platforms (Cline, Roo-Cline): can use 7-10 (longer timeout tolerance)'
-          },
-          focus_areas: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Optional: specific areas to focus the research on'
-          }
-        },
-        required: ['research_question']
-      }
-    };
-  }
 
   async execute(args: any): Promise<TextContent[]> {
     try {
@@ -87,7 +52,6 @@ export class GeminiDeepResearchTool {
       let cumulativeTokens = 0;
       let consecutiveFailures = 0;
       
-      // Direct research iterations - just pass the question to Gemini with grounding
       for (let i = 0; i < maxIterations; i++) {
         if (cumulativeTokens >= researchBudget) {
           logger.warn('Approaching token budget, stopping research iterations', {
@@ -103,7 +67,6 @@ export class GeminiDeepResearchTool {
           budget: researchBudget
         });
 
-        // Build the research prompt - either focused on a specific area or the full question
         let iterationPrompt = researchQuestion;
         if (focusAreas.length > 0 && i < focusAreas.length) {
           iterationPrompt = `${researchQuestion}\n\nFocus specifically on: ${focusAreas[i]}`;
@@ -112,7 +75,6 @@ export class GeminiDeepResearchTool {
           report += `### Iteration ${i + 1}\n\n`;
         }
 
-        // Include context from previous research if available
         const contextContent = this.buildSmartContext(researchSteps, researchBudget - cumulativeTokens);
         if (contextContent && i > 0) {
           iterationPrompt += `\n\nContext from previous research:\n${contextContent}`;
@@ -138,7 +100,6 @@ export class GeminiDeepResearchTool {
             });
           }
 
-          // Validate that grounding actually occurred
           if (searchResponse.groundingMetadata) {
             const hasSearches = (searchResponse.groundingMetadata.webSearchQueries?.length ?? 0) > 0;
             const hasSupports = (searchResponse.groundingMetadata.groundingSupports?.length ?? 0) > 0;
@@ -159,7 +120,7 @@ export class GeminiDeepResearchTool {
             });
           }
 
-          consecutiveFailures = 0; // Reset on success
+          consecutiveFailures = 0;
           
         } catch (error) {
           consecutiveFailures++;
@@ -170,7 +131,6 @@ export class GeminiDeepResearchTool {
             consecutiveFailures
           });
 
-          // Fail fast if queries are systematically failing
           if (consecutiveFailures >= 2 && researchSteps.length === 0) {
             throw new McpError(
               `Multiple research iterations failing consecutively.\n\n` +
@@ -226,7 +186,6 @@ export class GeminiDeepResearchTool {
         );
       }
 
-      // Optional synthesis if we have multiple iterations
       if (researchSteps.length > 1) {
         report += '### Synthesis\n\n';
 

@@ -7,12 +7,23 @@
   <style>
     :root {
       color-scheme: light dark;
-      --bg: var(--color-background-primary, Canvas);
-      --panel: var(--color-background-secondary, ButtonFace);
-      --text: var(--color-text-primary, CanvasText);
-      --text-secondary: var(--color-text-secondary, GrayText);
-      --border: var(--color-border-default, #333);
-      --accent: var(--color-accent-primary, #6ee7b7);
+      /* Light mode defaults */
+      --bg: var(--color-background-primary, #ffffff);
+      --panel: var(--color-background-secondary, #f3f4f6);
+      --text: var(--color-text-primary, #1a1a1a);
+      --text-secondary: var(--color-text-secondary, #6b7280);
+      --border: var(--color-border-default, #d1d5db);
+      --accent: var(--color-accent-primary, #059669);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: var(--color-background-primary, #111827);
+        --panel: var(--color-background-secondary, #1f2937);
+        --text: var(--color-text-primary, #f3f4f6);
+        --text-secondary: var(--color-text-secondary, #9ca3af);
+        --border: var(--color-border-default, #374151);
+        --accent: var(--color-accent-primary, #6ee7b7);
+      }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,20 +55,62 @@
       overflow: hidden;
       box-shadow: 0 4px 16px rgba(0,0,0,0.1);
       background: var(--panel);
-      padding: 20px;
+      position: relative;
+      cursor: grab;
+    }
+    .svg-wrap:active { cursor: grabbing; }
+
+    #panzoom-container {
+      width: 100%;
+      min-height: 300px;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
 
-    #svg-container { 
-      max-width: 100%;
-      max-height: 600px;
-    }
-
-    #svg-container svg {
+    #panzoom-container svg {
       max-width: 100%;
       height: auto;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-top: 8px;
+    }
+    .zoom-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.15s ease;
+      line-height: 1;
+    }
+    .zoom-btn:hover {
+      background: var(--panel);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .zoom-level {
+      font-size: 12px;
+      color: var(--text-secondary);
+      min-width: 40px;
+      text-align: center;
+      font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
     }
 
     .meta {
@@ -98,14 +151,13 @@
       white-space: nowrap;
       transition: all 0.2s ease;
     }
-
-    .copy-btn:hover { 
+    .copy-btn:hover {
       background: var(--panel);
       border-color: var(--accent);
       color: var(--accent);
     }
-    .copy-btn.copied { 
-      color: var(--accent); 
+    .copy-btn.copied {
+      color: var(--accent);
       border-color: var(--accent);
       background: transparent;
     }
@@ -125,7 +177,6 @@
       font-size: 12px;
       line-height: 1.6;
     }
-
     .prompt-label {
       color: var(--text-secondary);
       font-weight: 600;
@@ -135,18 +186,24 @@
       letter-spacing: 0.5px;
     }
 
-    .no-path { 
-      color: var(--text-secondary); 
-      font-style: italic; 
-      font-size: 12px; 
+    .no-path {
+      color: var(--text-secondary);
+      font-style: italic;
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
-  <div id="loading">Waiting for SVG…</div>
+  <div id="loading">Waiting for SVG...</div>
   <div id="content">
     <div class="svg-wrap">
-      <div id="svg-container"></div>
+      <div id="panzoom-container"></div>
+    </div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoom-in" title="Zoom in">+</button>
+      <span class="zoom-level" id="zoom-level">100%</span>
+      <button class="zoom-btn" id="zoom-out" title="Zoom out">&minus;</button>
+      <button class="zoom-btn" id="zoom-reset" title="Reset zoom" style="font-size:11px;">Fit</button>
     </div>
     <div class="meta">
       <div class="meta-row">

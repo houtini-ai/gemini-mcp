@@ -7,12 +7,23 @@
   <style>
     :root {
       color-scheme: light dark;
-      --bg: var(--color-background-primary, Canvas);
-      --panel: var(--color-background-secondary, ButtonFace);
-      --text: var(--color-text-primary, CanvasText);
-      --text-secondary: var(--color-text-secondary, GrayText);
-      --border: var(--color-border-default, #333);
-      --accent: var(--color-accent-primary, #6ee7b7);
+      /* Light mode defaults */
+      --bg: var(--color-background-primary, #ffffff);
+      --panel: var(--color-background-secondary, #f3f4f6);
+      --text: var(--color-text-primary, #1a1a1a);
+      --text-secondary: var(--color-text-secondary, #6b7280);
+      --border: var(--color-border-default, #d1d5db);
+      --accent: var(--color-accent-primary, #059669);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: var(--color-background-primary, #111827);
+        --panel: var(--color-background-secondary, #1f2937);
+        --text: var(--color-text-primary, #f3f4f6);
+        --text-secondary: var(--color-text-secondary, #9ca3af);
+        --border: var(--color-border-default, #374151);
+        --accent: var(--color-accent-primary, #6ee7b7);
+      }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -46,10 +57,38 @@
       background: #000;
     }
 
-    video { 
-      width: 100%; 
-      height: auto; 
+    video {
+      width: 100%;
+      height: auto;
       display: block;
+      max-height: 600px;
+    }
+
+    .fallback-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      text-align: center;
+      gap: 12px;
+    }
+    .fallback-icon { font-size: 48px; }
+    .fallback-title { font-size: 18px; font-weight: 600; }
+    .fallback-subtitle {
+      font-size: 13px;
+      opacity: 0.7;
+      max-width: 400px;
+    }
+    .fallback-path {
+      font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+      font-size: 11px;
+      color: var(--accent);
+      word-break: break-all;
+      max-width: 500px;
+      margin-top: 8px;
     }
 
     .meta {
@@ -90,14 +129,13 @@
       white-space: nowrap;
       transition: all 0.2s ease;
     }
-
-    .copy-btn:hover { 
+    .copy-btn:hover {
       background: var(--panel);
       border-color: var(--accent);
       color: var(--accent);
     }
-    .copy-btn.copied { 
-      color: var(--accent); 
+    .copy-btn.copied {
+      color: var(--accent);
       border-color: var(--accent);
       background: transparent;
     }
@@ -108,12 +146,10 @@
       font-size: 13px;
       line-height: 1.6;
     }
-
     .spec-item {
       display: inline-block;
       margin-right: 16px;
     }
-
     .spec-label {
       color: var(--text-secondary);
       font-weight: 600;
@@ -127,7 +163,6 @@
       font-size: 12px;
       line-height: 1.6;
     }
-
     .prompt-label {
       color: var(--text-secondary);
       font-weight: 600;
@@ -137,22 +172,17 @@
       letter-spacing: 0.5px;
     }
 
-    .no-path { 
-      color: var(--text-secondary); 
-      font-style: italic; 
-      font-size: 12px; 
+    .no-path {
+      color: var(--text-secondary);
+      font-style: italic;
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
-  <div id="loading">Waiting for video…</div>
+  <div id="loading">Waiting for video...</div>
   <div id="content">
-    <div class="video-wrap">
-      <video id="video" controls>
-        <source id="video-source" src="" type="video/mp4">
-        Your browser does not support the video element.
-      </video>
-    </div>
+    <div class="video-wrap" id="video-wrap"></div>
     <div class="meta">
       <div class="meta-row">
         <div id="path-display" class="path"></div>

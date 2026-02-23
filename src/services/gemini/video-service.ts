@@ -122,6 +122,10 @@ interface VeoOperationResponse {
   };
 }
 
+// ─── Retry constants ─────────────────────────────────────────────────────────
+const MAX_429_RETRIES = 3;
+const INITIAL_BACKOFF_MS = 30_000; // 30 seconds
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export class GeminiVideoService extends BaseService {
@@ -151,6 +155,43 @@ export class GeminiVideoService extends BaseService {
       pollingInterval: `${this.pollingIntervalMs / 1000}s`,
       maxPollingTime: `${this.maxPollingTimeMs / 1000}s`
     });
+  }
+
+  /**
+   * Fetch with automatic retry on 429 (rate limit) responses.
+   * Uses exponential backoff starting at INITIAL_BACKOFF_MS.
+   */
+  private async fetchWithRetry(
+    url: string,
+    init?: RequestInit,
+    label = 'request'
+  ): Promise<Response> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt <= MAX_429_RETRIES; attempt++) {
+      const response = await fetch(url, init);
+
+      if (response.status !== 429) {
+        return response;
+      }
+
+      // 429 rate limited
+      lastError = new GeminiError(
+        `Video generation rate limited (429). The API has a quota limit. ` +
+        `Please wait 30-60 seconds before retrying.`
+      );
+
+      if (attempt < MAX_429_RETRIES) {
+        const backoffMs = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+        this.logInfo(`Rate limited (429) on ${label}, retrying in ${backoffMs / 1000}s`, {
+          attempt: attempt + 1,
+          maxRetries: MAX_429_RETRIES,
+        });
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
+
+    throw lastError!;
   }
 
   private validateModel(model: string): void {
@@ -235,7 +276,7 @@ export class GeminiVideoService extends BaseService {
         maxTime: `${this.maxPollingTimeMs / 1000}s`
       });
 
-      const response = await fetch(url);
+      const response = await this.fetchWithRetry(url, undefined, 'poll operation');
 
       if (!response.ok) {
         const text = await response.text();
@@ -275,11 +316,11 @@ export class GeminiVideoService extends BaseService {
     this.logInfo('Downloading video from URI', { uri: uri.slice(0, 80) });
 
     // Download video file using authenticated request
-    const response = await fetch(uri, {
+    const response = await this.fetchWithRetry(uri, {
       headers: {
         'x-goog-api-key': this.apiKey
       }
-    });
+    }, 'download video');
 
     if (!response.ok) {
       const text = await response.text();
@@ -363,11 +404,11 @@ export class GeminiVideoService extends BaseService {
     // Submit async job
     const submitUrl = `${GEMINI_API_BASE}/${model}:predictLongRunning?key=${this.apiKey}`;
     
-    const submitResponse = await fetch(submitUrl, {
+    const submitResponse = await this.fetchWithRetry(submitUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
-    });
+    }, 'submit video');
 
     if (!submitResponse.ok) {
       const text = await submitResponse.text();

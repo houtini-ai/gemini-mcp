@@ -1,4 +1,5 @@
 import { App } from '@modelcontextprotocol/ext-apps';
+import { setupPathCopy, copyToClipboard, showContent } from './shared.js';
 
 interface LandingPageResult {
   html: string;
@@ -27,23 +28,41 @@ function render(data: LandingPageResult) {
   const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
   const copyHtmlBtn = document.getElementById('copy-html-btn') as HTMLButtonElement;
   const viewport = document.getElementById('viewport')!;
+  const viewportWrapper = document.querySelector('.viewport-wrapper')! as HTMLElement;
 
   currentHtml = data.html;
 
+  // Auto-resize iframe to match its content height after load
+  iframe.addEventListener('load', () => {
+    resizeIframe();
+    // Also observe for delayed renders (images, fonts, etc.)
+    const timer = setInterval(resizeIframe, 500);
+    setTimeout(() => clearInterval(timer), 5000);
+  });
+
   iframe.srcdoc = data.html;
 
-  if (data.savedPath) {
-    pathDisplay.textContent = data.savedPath;
-    copyBtn.style.display = 'block';
-    copyBtn.addEventListener('click', async () => {
-      await copyToClipboard(data.savedPath!, copyBtn, 'Copy path');
-    });
-  } else {
-    pathDisplay.innerHTML = '<span class="no-path">Not saved to disk</span>';
+  function resizeIframe() {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc?.body) {
+        const height = Math.max(
+          doc.body.scrollHeight,
+          doc.documentElement?.scrollHeight || 0,
+          600 // minimum height
+        );
+        iframe.style.height = height + 'px';
+      }
+    } catch {
+      // cross-origin fallback — just use a tall default
+      iframe.style.height = '3000px';
+    }
   }
 
-  copyHtmlBtn.addEventListener('click', async () => {
-    await copyToClipboard(currentHtml, copyHtmlBtn, 'Copy HTML');
+  setupPathCopy(data.savedPath, pathDisplay, copyBtn);
+
+  copyHtmlBtn.addEventListener('click', () => {
+    copyToClipboard(currentHtml, copyHtmlBtn, 'Copy HTML');
   });
 
   const resizeButtons = document.querySelectorAll('.resize-btn');
@@ -57,43 +76,18 @@ function render(data: LandingPageResult) {
 
       viewport.className = 'viewport';
       viewport.classList.add(size);
+
+      // Toggle device-mode wrapper class for mobile/tablet padding & background
+      if (size === 'desktop') {
+        viewportWrapper.classList.remove('device-mode');
+      } else {
+        viewportWrapper.classList.add('device-mode');
+      }
+
+      // Re-measure after layout transition
+      setTimeout(resizeIframe, 350);
     });
   });
 
-  loading.style.display = 'none';
-  content.style.display = 'flex';
-}
-
-async function copyToClipboard(text: string, button: HTMLButtonElement, originalText: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    button.textContent = 'Copied!';
-    button.classList.add('copied');
-    setTimeout(() => {
-      button.textContent = originalText;
-      button.classList.remove('copied');
-    }, 2000);
-  } catch (err) {
-    const tempInput = document.createElement('textarea');
-    tempInput.value = text;
-    tempInput.style.position = 'absolute';
-    tempInput.style.left = '-9999px';
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    try {
-      document.execCommand('copy');
-      button.textContent = 'Copied!';
-      button.classList.add('copied');
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.classList.remove('copied');
-      }, 2000);
-    } catch (fallbackErr) {
-      button.textContent = 'Copy failed';
-      setTimeout(() => {
-        button.textContent = originalText;
-      }, 2000);
-    }
-    document.body.removeChild(tempInput);
-  }
+  showContent(loading, content, 'flex');
 }

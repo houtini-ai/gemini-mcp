@@ -65,8 +65,9 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/ext-apps": "^1.1.0",
     "@modelcontextprotocol/sdk": "^1.27.0",
+    "@panzoom/panzoom": "^4.6.1",
     "dotenv": "^16.4.5",
     "sharp": "^0.34.5",
     "winston": "^3.14.0",

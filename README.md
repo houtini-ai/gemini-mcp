@@ -3,11 +3,9 @@
 [![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@houtini/gemini-mcp)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?style=flat-square)](https://registry.modelcontextprotocol.io)
 
-**I've been running this MCP server in my Claude Desktop setup for several months, and it's become one of the few I actually leave enabled permanently.** Not because Gemini replaces Claude — it doesn't — but because grounded search, deep research, and image generation are things Gemini genuinely does well, and having them available as tools inside Claude is more useful than switching between browser tabs.
+**I've been running this MCP server in my Claude Desktop setup for several months, and it's one of the few I leave enabled permanently.** Not because Gemini replaces Claude -- it doesn't -- but because grounded search, deep research, image generation, and video are things Gemini does well. Having them as tools inside Claude beats switching between browser tabs.
 
-**Version 2.2.0** includes significant improvements: help system for better onboarding, quality 100 image previews (no more blurry images), Gemini 3.1 Pro defaults, professional chart design systems, and enhanced search grounding.
-
-Ten tools. One `npx` command. Here's what's in it.
+Thirteen tools. One `npx` command.
 
 ---
 
@@ -15,7 +13,7 @@ Ten tools. One `npx` command. Here's what's in it.
 
 **Step 1: Get a Gemini API key**
 
-Go to [Google AI Studio](https://aistudio.google.com/apikey) and create a key. Free tier covers most development use — you'll hit rate limits on deep research if you're hammering it, but for day-to-day tool use it's fine.
+Go to [Google AI Studio](https://aistudio.google.com/apikey) and create one. The free tier covers most development use -- you'll hit rate limits on deep research if you're hammering it, but for day-to-day work it's fine.
 
 **Step 2: Add to your Claude Desktop config**
 
@@ -39,9 +37,9 @@ Config file locations:
 
 **Step 3: Restart Claude Desktop**
 
-That's it. The tools show up automatically. You don't need to install anything separately — `npx` pulls the package on first run.
+That's it. The tools show up automatically. `npx` pulls the package on first run -- no separate install.
 
-### If you want a local build instead
+### Local build instead
 
 For development, or if you'd rather not rely on npx:
 
@@ -70,44 +68,6 @@ Then point your config at the local build:
 
 ---
 
-## What's new in v2.2.0
-
-### Help system
-
-```
-Use gemini:gemini_help with topic="overview"
-```
-
-Get comprehensive documentation for all Gemini MCP features without leaving Claude. Topics include: `overview`, `image_generation`, `image_editing`, `image_analysis`, `chat`, `deep_research`, `grounding`, `media_resolution`, `models`, `all`.
-
-### Image quality improvements
-
-Images now generate at quality 100 (lossless compression) with 1024px previews instead of the previous quality 60 @ 512px. Technical diagrams, charts, and text are now crisp and readable. Dramatically better for any image with fine details or text labels.
-
-### Default model upgrades
-
-- Chat defaults to `gemini-3.1-pro-preview` (was gemini-3-flash-preview)
-- Image analysis defaults to `gemini-3.1-pro-preview` (was gemini-3-flash-preview)
-- Noticeable quality improvements in responses and reasoning
-
-### Professional chart design systems
-
-The `gemini_prompt_assistant` tool now includes 9 professional chart design systems for data visualization:
-
-- **Professional** (IBM Carbon / Tailwind) - Enterprise dashboards
-- **Storytelling** (Cole Nussbaumer Knaflic) - Strategic highlighting for business insights
-- **Financial** (Financial Times) - Elegant editorial with FT Pink background
-- **Terminal** (Bloomberg / Fintech) - High-density dark mode with electric neon
-- **Modernist** (W.E.B. Du Bois) - Bold geometric blocks and stark contrasts
-- **Editorial** (FiveThirtyEight / Economist) - Data journalism
-- **Scientific** (Nature / Science) - Academic rigor
-- **Minimal** (Edward Tufte) - Maximum data-ink ratio
-- **Dark** (Observable) - Modern dark mode
-
-Each system provides complete colour palettes, typography specifications, and design rules optimised for clean, modern, uncluttered charts.
-
----
-
 ## What it does
 
 ### Chat with Google Search grounding
@@ -116,9 +76,9 @@ Each system provides complete colour palettes, typography specifications, and de
 Use gemini:gemini_chat to ask: "What changed in the MCP spec in the last month?"
 ```
 
-Grounding is on by default. Gemini searches Google before answering, so you get real current information rather than training data cutoff answers. Grounding sources are displayed as markdown links in the response.
+Grounding is on by default. Gemini searches Google before answering, so you get current information rather than training data cutoff answers. Sources come back as markdown links.
 
-For questions where you want the model's reasoning rather than a live search — "explain this code" or similar — set `grounding: false`.
+For questions where you want reasoning over live search -- "explain this code" or similar -- set `grounding: false`.
 
 Supports `thinking_level` on Gemini 3 models: `high` for maximum reasoning depth, `low` to keep it fast, `medium`/`minimal` on Gemini 3 Flash only.
 
@@ -130,200 +90,88 @@ Use gemini:gemini_deep_research with:
   max_iterations=5
 ```
 
-This runs multiple grounded search iterations, then synthesises a full report. Takes 2-5 minutes depending on complexity. Worth it for anything where you need comprehensive coverage rather than a quick answer.
+Runs multiple grounded search iterations, then synthesises a full report. Takes 2-5 minutes depending on complexity. Worth it for anything where you need comprehensive coverage rather than a quick answer.
 
-Set `max_iterations` to 3–4 in Claude Desktop (4-minute tool timeout). In IDEs (Cursor, Windsurf, VS Code) or agent frameworks with longer timeout tolerance, 7–10 iterations produces noticeably better synthesis. Pass `focus_areas` as an array to steer toward specific angles.
+Set `max_iterations` to 3-4 in Claude Desktop (4-minute tool timeout). In IDEs (Cursor, Windsurf, VS Code) or agent frameworks with longer timeout tolerance, 7-10 iterations produces noticeably better synthesis. Pass `focus_areas` as an array to steer toward specific angles.
 
 ### Image generation with search grounding
 
 ```
 Use gemini:generate_image with:
-  prompt="Stock price chart showing Apple (AAPL) closing prices for the last 5 trading days with actual dollar values"
+  prompt="Stock price chart showing Apple (AAPL) closing prices for the last 5 trading days"
   use_search=true
   aspectRatio="16:9"
 ```
 
 Default model is `gemini-3-pro-image-preview` (Nano Banana Pro). Also supports `gemini-2.5-flash-image` for faster generation.
 
-**Search grounding for data-driven images** — Enable real-time data integration:
+When `use_search=true`, Gemini searches Google for current data before generating. Financial and news queries work reliably and return 2-5 grounding sources as markdown links. Weather queries are inconsistent (Gemini API limitation, not a code issue).
 
-When `use_search=true`, Gemini searches Google for current data before generating the image. Perfect for:
-- **Financial data** — Stock charts with current market prices (works reliably)
-- **News events** — Current events with actual headlines (works reliably)  
-- **Sports scores** — Recent game results with real scores
-- **Statistics** — Current data visualizations
-
-⚠️ **Note:** Weather queries don't consistently return grounding sources (Gemini API limitation). Financial and news queries work reliably.
-
-The response includes grounding sources as markdown links showing which websites informed the image:
+### Video generation with Veo 3.1
 
 ```
-**Sources used for grounding:**
-1. [twelvedata.com](https://...)
-2. [seekingalpha.com](https://...)
-3. [investing.com](https://...)
+Use gemini:generate_video with:
+  prompt="A close-up shot of a futuristic coffee machine brewing a glowing blue espresso, steam rising dramatically. Cinematic lighting."
+  resolution="1080p"
+  durationSeconds=8
 ```
 
-### Media resolution control for cost optimization
+Uses Google's Veo 3.1 model. Generates 4-8 second videos at up to 4K resolution with native synchronised audio. Processing takes 2-5 minutes -- the tool polls automatically until the video is ready.
 
-Reduce token usage by up to 75% whilst maintaining quality for your use case:
+Options worth knowing about:
+- `aspectRatio` -- `16:9` (landscape, default) or `9:16` (portrait/vertical)
+- `generateAudio` -- on by default, produces dialogue and sound effects matching the prompt
+- `sampleCount` -- generate up to 4 variations in one call
+- `seed` -- for deterministic output across runs
+- `generateThumbnail` -- extracts a frame via ffmpeg (needs ffmpeg in PATH)
+- `generateHTMLPlayer` -- creates a local HTML player alongside the video
 
-```
-Use gemini:analyze_image with:
-  images=[{data: pdfBase64, mimeType: "application/pdf"}]
-  prompt="Extract all text from this document"
-  global_media_resolution="MEDIA_RESOLUTION_MEDIUM"
-```
-
-**Resolution levels and token costs:**
-- `MEDIA_RESOLUTION_LOW` — 280 tokens (75% savings) — Simple tasks, bulk operations
-- `MEDIA_RESOLUTION_MEDIUM` — 560 tokens (50% savings) — **PDFs/documents (OCR saturates at medium)**
-- `MEDIA_RESOLUTION_HIGH` — 1120 tokens (default) — Best quality, detailed analysis
-- `MEDIA_RESOLUTION_ULTRA_HIGH` — 2000+ tokens (per-image only) — Maximum detail
-
-**Important:** For PDF OCR, MEDIUM resolution provides identical text extraction quality to HIGH whilst using 50% fewer tokens. Only use HIGH/ULTRA_HIGH for complex visual analysis.
-
-Set `global_media_resolution` to apply to all images, or override per-image:
+### SVG generation
 
 ```
-Use gemini:analyze_image with:
-  images=[
-    {data: simpleIcon, mimeType: "image/png", mediaResolution: "MEDIA_RESOLUTION_LOW"},
-    {data: detailedDiagram, mimeType: "image/png", mediaResolution: "MEDIA_RESOLUTION_ULTRA_HIGH"}
-  ]
-  prompt="Analyze both images"
-  global_media_resolution="MEDIA_RESOLUTION_MEDIUM"
+Use gemini:generate_svg with:
+  prompt="Architecture diagram showing a microservices system with API gateway, three services, and a shared database"
+  style="technical"
+  width=1000
+  height=600
 ```
 
-### Image output and storage
+Generates clean, production-ready SVG code for diagrams, illustrations, icons, and data visualisations. Styles: `technical` (diagrams), `artistic` (illustrations), `minimal` (simple), `data-viz` (charts).
 
-**Default behaviour:** Images return as inline base64 previews (quality 100, 1024px) rendered directly in Claude. Perfect for quick generation and viewing.
+### Image editing and analysis
 
-**Persistent storage:** Set `GEMINI_IMAGE_OUTPUT_DIR` to automatically save all generated images:
+**Conversational editing** -- Gemini 3 Pro Image maintains context across editing turns using thought signatures. The server captures these automatically. Pass them back on subsequent edit calls for full continuity:
 
-```json
-"env": {
-  "GEMINI_API_KEY": "your-api-key-here",
-  "GEMINI_IMAGE_OUTPUT_DIR": "C:/Users/username/Pictures/gemini-output"
-}
-```
-
-Every image saves to this directory with a timestamp filename. The tool returns both the inline preview AND the file path. For anything you want to keep, set the output directory.
-
-**Per-call override:** Pass `outputPath` to save a specific image to a custom location:
-
-```
-Use gemini:generate_image with:
-  prompt="Company logo concept"
-  outputPath="C:/projects/branding/logo-concept-01.png"
-```
-
-⚠️ **Size limits:** Base64 inline previews have a ~1MB limit and don't persist beyond the conversation. For production images or anything you need to keep, use output directories.
-
-### Conversational image editing
-
-Gemini 3 Pro Image maintains visual context across editing turns using thought signatures — the model's memory of what it generated. The server captures these automatically and returns them in the response. Pass them back in the next call to edit with full context.
-
-**Workflow:**
-
-1. Generate initial image:
-```
-Use gemini:generate_image with:
-  prompt="A modern minimalist logo for a tech startup"
-  model="gemini-3-pro-image-preview"
-```
-
-2. Edit with context:
 ```
 Use gemini:edit_image with:
-  prompt="Change the color scheme to blue and green"
-  images=[
-    {
-      data: imageFromStep1Base64,
-      mimeType: "image/png",
-      thoughtSignature: "thoughtSignatureFromStep1"
-    }
-  ]
-  model="gemini-3-pro-image-preview"
+  prompt="Change the colour scheme to blue and green"
+  images=[{data: imageBase64, mimeType: "image/png", thoughtSignature: "fromPreviousCall"}]
 ```
 
-The model edits with full continuity. Skip thought signatures and each edit starts from scratch.
+Skip thought signatures and each edit starts from scratch.
 
-### Image analysis and description
+**Analysis** -- two tools for different purposes:
+- `describe_image` -- Fast general descriptions using Gemini 3 Flash
+- `analyze_image` -- Structured extraction and detailed reasoning using Gemini 3.1 Pro
 
-Two separate tools for different purposes:
-
-**Quick descriptions:**
+**Load local files:**
 ```
-Use gemini:describe_image with:
-  images=[{data: imageBase64, mimeType: "image/jpeg"}]
-  prompt="Describe this image in technical detail"
+Use gemini:load_image_from_path with filePath="C:/screenshots/error.png"
 ```
-Uses `gemini-3-flash-preview` by default. Fast general descriptions.
+Returns base64 data ready for any image tool.
 
-**Detailed analysis and extraction:**
-```
-Use gemini:analyze_image with:
-  images=[{data: imageBase64, mimeType: "image/jpeg"}]
-  prompt="Extract the product name, price, and description from this screenshot"
-```
-Uses `gemini-3.1-pro-preview` by default. More capable for structured extraction, technical analysis, and complex reasoning about images.
+### Media resolution control
 
-**Load local images:**
-```
-Use gemini:load_image_from_path with:
-  filePath="C:/screenshots/error.png"
-```
-Returns base64 data ready to pass directly to any image tool.
+Reduce token usage by up to 75% whilst maintaining quality:
 
-### Professional chart generation
+| Level | Tokens | Savings | Best for |
+|-------|--------|---------|----------|
+| `MEDIA_RESOLUTION_LOW` | 280 | 75% | Simple tasks, bulk operations |
+| `MEDIA_RESOLUTION_MEDIUM` | 560 | 50% | PDFs/documents (OCR saturates here) |
+| `MEDIA_RESOLUTION_HIGH` | 1120 | default | Detailed analysis |
+| `MEDIA_RESOLUTION_ULTRA_HIGH` | 2000+ | per-image only | Maximum detail |
 
-The `gemini_prompt_assistant` tool provides expert guidance for chart generation using 9 professional design systems:
-
-```
-Use gemini:gemini_prompt_assistant with:
-  request_type="template"
-  use_case="product"
-  desired_outcome="Generate a professional product comparison chart"
-```
-
-**Available design systems:**
-
-1. **storytelling** (Cole Nussbaumer Knaflic) — Strategic highlighting for business insights
-   - Everything muted grey except ONE highlighted data point in bold colour
-   - Actionable titles that state the takeaway
-   - No legends — direct labeling only
-   - Perfect for executive presentations
-
-2. **financial** (Financial Times) — Elegant editorial journalism
-   - Signature FT Pink background (#fff1e5)
-   - White gridlines on coloured background
-   - Serif titles + sans-serif data
-   - 2px top border for structure
-
-3. **terminal** (Bloomberg / Fintech) — High-density dark mode
-   - Electric neon colours on black (#00e3d1, #34e05b, #ff2b6d)
-   - Monospace for precision
-   - Y-axis labels on right side
-   - Crosshairs and borders
-
-4. **modernist** (W.E.B. Du Bois) — Bold geometric blocks
-   - 100% solid opaque colours (no gradients)
-   - 1-2px solid black outlines on all shapes
-   - No gridlines — direct labels only
-   - Centered all-caps titles
-
-5. **professional** (IBM Carbon / Tailwind) — Enterprise UI
-6. **editorial** (FiveThirtyEight / Economist) — Data journalism
-7. **scientific** (Nature / Science) — Academic rigor
-8. **minimal** (Edward Tufte) — Maximum data-ink ratio
-9. **dark** (Observable) — Modern dark mode
-
-**Request types:**
-- `template` — Get complete prompt templates with colour palettes and rules
-- `optimize_prompt` — Improve existing chart prompts
-- `troubleshoot` — Fix chart generation issues
-- `lighting_guide`, `color_guide`, `lens_guide`, `style_guide` — Specific guidance
+For PDF OCR, MEDIUM gives identical text extraction quality to HIGH at half the tokens. Set `global_media_resolution` to apply to all images, or override per-image with `mediaResolution`.
 
 ### Landing page generation
 
@@ -334,14 +182,68 @@ Use gemini:generate_landing_page with:
   primaryColour="#6366F1"
   style="startup"
   sections=["hero", "features", "pricing", "cta"]
-  outputPath="C:/dev/pingwatch/landing.html"
 ```
 
-Returns a self-contained HTML file — inline CSS and vanilla JS, no external dependencies. Useful for quick prototypes and MVP landing pages.
+Returns a self-contained HTML file -- inline CSS and vanilla JS, no external dependencies. Styles: `minimal`, `bold`, `corporate`, `startup`.
 
-**Styles:** `minimal`, `bold`, `corporate`, `startup`
+### Professional chart design systems
 
-If you skip `outputPath`, it returns raw HTML string to Claude's context; use Desktop Commander to write it to disk.
+The `gemini_prompt_assistant` tool includes 9 professional chart design systems:
+
+| System | Inspiration | Best for |
+|--------|------------|----------|
+| **storytelling** | Cole Nussbaumer Knaflic | Executive presentations -- everything muted except one bold highlight |
+| **financial** | Financial Times | Editorial journalism -- FT Pink background, serif titles |
+| **terminal** | Bloomberg / Fintech | High-density dark mode with electric neon |
+| **modernist** | W.E.B. Du Bois | Bold geometric blocks, stark contrasts |
+| **professional** | IBM Carbon / Tailwind | Enterprise dashboards |
+| **editorial** | FiveThirtyEight / Economist | Data journalism |
+| **scientific** | Nature / Science | Academic rigour |
+| **minimal** | Edward Tufte | Maximum data-ink ratio |
+| **dark** | Observable | Modern dark mode |
+
+```
+Use gemini:gemini_prompt_assistant with:
+  request_type="template"
+  use_case="product"
+  desired_outcome="Generate a professional product comparison chart"
+```
+
+### Help system
+
+```
+Use gemini:gemini_help with topic="overview"
+```
+
+Documentation for all features without leaving Claude. Topics: `overview`, `image_generation`, `image_editing`, `image_analysis`, `chat`, `deep_research`, `grounding`, `media_resolution`, `models`, `all`.
+
+---
+
+## Image output and storage
+
+**Default behaviour:** Images return as inline base64 previews (quality 100, 1024px) rendered directly in Claude.
+
+**Persistent storage:** Set `GEMINI_IMAGE_OUTPUT_DIR` to auto-save all generated images:
+
+```json
+"env": {
+  "GEMINI_API_KEY": "your-api-key-here",
+  "GEMINI_IMAGE_OUTPUT_DIR": "C:/Users/username/Pictures/gemini-output"
+}
+```
+
+Every image saves with a timestamp filename. The tool returns both the inline preview and the file path.
+
+**Per-call override:** Pass `outputPath` on any generation tool to save to a specific location.
+
+The server uses a two-tier compression approach to handle the MCP protocol's ~1MB JSON-RPC limit whilst preserving full-resolution files on disk:
+
+| Tier | Quality | Max dimension | Purpose |
+|------|---------|---------------|---------|
+| **Full-res** | Original | Original | Saved to disk |
+| **Viewer preview** | 100 | 1024px | MCP App inline preview (~400KB) |
+
+Gemini returns 2-5MB images. The full image is saved to disk immediately, and a compressed preview is created for the MCP App viewer.
 
 ---
 
@@ -349,13 +251,13 @@ If you skip `outputPath`, it returns raw HTML string to Claude's context; use De
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GEMINI_API_KEY` | Yes | — | Google AI API key from [AI Studio](https://aistudio.google.com/apikey) |
+| `GEMINI_API_KEY` | Yes | -- | Google AI API key from [AI Studio](https://aistudio.google.com/apikey) |
 | `GEMINI_DEFAULT_MODEL` | No | `gemini-3.1-pro-preview` | Default model for `gemini_chat` and `analyze_image` |
 | `GEMINI_DEFAULT_GROUNDING` | No | `true` | Enable Google Search grounding by default |
-| `GEMINI_IMAGE_OUTPUT_DIR` | No | — | Auto-save directory for all generated images. If unset, images return inline as base64 only |
+| `GEMINI_IMAGE_OUTPUT_DIR` | No | -- | Auto-save directory for generated images |
 | `GEMINI_ALLOW_EXPERIMENTAL` | No | `false` | Include experimental/preview models in auto-discovery |
-| `GEMINI_MCP_LOG_FILE` | No | `false` | Write logs to `~/.gemini-mcp/logs/`. Off by default — can cause permission issues on npx installs |
-| `DEBUG_MCP` | No | `false` | Log to stderr. Useful when debugging tool calls |
+| `GEMINI_MCP_LOG_FILE` | No | `false` | Write logs to `~/.gemini-mcp/logs/` |
+| `DEBUG_MCP` | No | `false` | Log to stderr for debugging tool calls |
 
 ---
 
@@ -364,62 +266,32 @@ If you skip `outputPath`, it returns raw HTML string to Claude's context; use De
 | Tool | Description |
 |------|-------------|
 | `gemini_chat` | Chat with Gemini 3.1 Pro. Google Search grounding on by default. Supports `thinking_level` for Gemini 3 |
-| `gemini_deep_research` | Multi-step iterative research with Google Search. Synthesises comprehensive reports (2-5 minutes) |
-| `gemini_list_models` | Lists available models from the API with descriptions |
-| `gemini_help` | **NEW** Comprehensive help system — get documentation for all features without leaving Claude |
-| `generate_image` | Image generation (quality 100 @ 1024px). Returns thought signatures for conversational editing. Supports search grounding |
-| `edit_image` | Edit images with natural-language instructions. Pass thought signatures for multi-turn continuity |
-| `describe_image` | Describe or analyse images using Gemini 3 Flash. Text output, general descriptions |
-| `analyze_image` | Extract structured information from images using Gemini 3.1 Pro. Detailed analysis and reasoning |
-| `load_image_from_path` | Read a local image file and return base64 ready for any image tool |
-| `generate_landing_page` | Generate self-contained HTML landing pages with inline CSS/JS. No external dependencies |
-| `gemini_prompt_assistant` | **NEW** Expert guidance for image generation with 9 professional chart design systems |
+| `gemini_deep_research` | Multi-step iterative research with Google Search. Synthesises comprehensive reports |
+| `gemini_list_models` | Lists available models from the API |
+| `gemini_help` | Documentation for all features without leaving Claude |
+| `gemini_prompt_assistant` | Expert guidance for image generation with 9 chart design systems |
+| `generate_image` | Image generation with search grounding and thought signatures for conversational editing |
+| `edit_image` | Edit images with natural-language instructions. Supports multi-turn continuity |
+| `describe_image` | Fast image descriptions using Gemini 3 Flash |
+| `analyze_image` | Structured extraction and analysis using Gemini 3.1 Pro |
+| `load_image_from_path` | Read a local image file and return base64 for any image tool |
+| `generate_video` | Video generation with Veo 3.1 -- 4-8 seconds at up to 4K with native audio |
+| `generate_svg` | Production-ready SVG graphics for diagrams, illustrations, and data visualisations |
+| `generate_landing_page` | Self-contained HTML landing pages with inline CSS/JS |
 
 ---
 
-## Gemini 3 notes
+## Model reference
 
-**Temperature:** Gemini 3 models require temperature 1.0. Google's docs warn that lower values cause looping or degraded reasoning. The server enforces this automatically — whatever you pass gets overridden to 1.0 on Gemini 3.
+| Model | Used by | Notes |
+|-------|---------|-------|
+| `gemini-3.1-pro-preview` | `gemini_chat`, `analyze_image` | Default. Advanced reasoning |
+| `gemini-3-pro-image-preview` | `generate_image`, `edit_image` | Nano Banana Pro -- highest quality generation |
+| `gemini-2.5-flash-image` | `generate_image` (optional) | Faster generation, higher volume |
+| `gemini-3-flash-preview` | `describe_image` | Fast general descriptions |
+| `veo-3.1-generate-preview` | `generate_video` | Veo 3.1 -- 4K video with native audio |
 
-**Thought signatures:** Required for conversational editing with `gemini-3-pro-image-preview`. The server captures and returns them automatically. Pass them back on subsequent edit calls — without them, each edit starts fresh with no memory.
-
-**Thinking level:** Only applies to `gemini_chat` with Gemini 3 models. Gemini 3 Flash supports `minimal` and `medium` in addition to `low` and `high`. Ignored on non-Gemini-3 models.
-
----
-
-## Supported image models
-
-| Model | Notes |
-|-------|-------|
-| `gemini-3-pro-image-preview` | Default for generation. Nano Banana Pro — highest quality, Gemini 3 architecture |
-| `gemini-2.5-flash-image` | Gemini 2.5 Flash — faster generation, higher volume |
-| `nano-banana-pro-preview` | API alias for `gemini-3-pro-image-preview` |
-| `gemini-3-flash-preview` | Default for `describe_image` — fast general descriptions |
-| `gemini-3.1-pro-preview` | Default for `analyze_image` and `gemini_chat` — advanced reasoning |
-
----
-
-## Search grounding coverage
-
-Based on testing, search grounding works reliably for:
-- ✅ Financial data (stock prices, market data)
-- ✅ News and current events
-- ✅ Sports scores and statistics
-- ⚠️ Weather data (inconsistent — API limitation, not a code issue)
-
-Financial and news queries return 2-5 grounding sources as markdown links. Weather queries may generate images but don't consistently return grounding metadata from the Gemini API.
-
----
-
-## Chart design system quick reference
-
-**For business presentations:** Use `storytelling` (muted grey with one bold highlight)  
-**For editorial content:** Use `financial` (FT Pink background) or `editorial` (FiveThirtyEight style)  
-**For dark interfaces:** Use `terminal` (electric neon on black) or `dark` (modern dark mode)  
-**For academic work:** Use `scientific` (Nature/Science journals)  
-**For maximum clarity:** Use `minimal` (Edward Tufte data-ink)  
-**For visual impact:** Use `modernist` (W.E.B. Du Bois geometric blocks)  
-**For enterprise apps:** Use `professional` (IBM Carbon / Tailwind)
+**Gemini 3 notes:** Temperature is forced to 1.0 on Gemini 3 models (Google's requirement -- lower values cause looping). Thought signatures are captured automatically for conversational image editing. Thinking level only applies to `gemini_chat`.
 
 ---
 
@@ -427,33 +299,8 @@ Financial and news queries return 2-5 grounding sources as markdown links. Weath
 
 - Node.js 18+
 - A Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
+- ffmpeg (optional, for video thumbnail extraction)
 
 ## Licence
 
 Apache-2.0
-
----
-
-## Changelog
-
-### v2.2.0 (2025-02-21)
-- ✨ Added `gemini_help` tool with comprehensive documentation
-- ✨ Image quality improvements (quality 100 @ 1024px vs old quality 60 @ 512px)
-- ✨ Default model upgrades to Gemini 3.1 Pro for chat and analysis
-- ✨ Professional chart design systems (9 systems covering major visualization philosophies)
-- ✨ Enhanced `gemini_prompt_assistant` with design system templates
-- 📝 Comprehensive README update with all features documented
-- 🐛 Grounding source display improvements (markdown links)
-- 📊 Test coverage for all v2.2.0 features
-
-### v2.1.0
-- Search grounding for image generation
-- Media resolution control for cost optimization
-- Thought signatures for conversational editing
-- Multiple model support
-
-### v2.0.0
-- Initial public release
-- Chat, deep research, image generation
-- Image analysis and description
-- Landing page generation
