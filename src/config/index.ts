@@ -35,7 +35,7 @@ export const config: Config = {
   },
   server: {
     name: 'gemini-mcp',
-    version: '1.0.0',
+    version: '2.2.0',
     imageOutputDir: process.env.GEMINI_IMAGE_OUTPUT_DIR
   },
   logging: {
