@@ -7,6 +7,14 @@
 
 Thirteen tools. One `npx` command.
 
+### MCP App previews
+
+Generated images and diagrams render inline in Claude Desktop with zoom controls, file paths, and prompt context:
+
+| Image generation | SVG / diagram generation |
+|:---:|:---:|
+| ![Image preview in MCP App](image-preview-mcp-app.jpg) | ![Diagram preview in MCP App](diagram-preview-mcp-app.jpg) |
+
 ---
 
 ## Get started in two minutes
