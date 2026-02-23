@@ -116,4 +116,5 @@ commit-msg.txt
 
 # Output directories
 test-output/
+test-outputs/
 output/
