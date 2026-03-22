@@ -24,6 +24,12 @@ Generated images and diagrams render inline in Claude Desktop with zoom controls
 
 ---
 
+> **Quick Navigation**
+>
+> [Get started](#get-started-in-two-minutes) | [What it does](#what-it-does) | [Image output](#image-output-and-storage) | [Configuration](#configuration-reference) | [Tools](#tools-reference) | [Models](#model-reference) | [Requirements](#requirements)
+
+---
+
 ## Get started in two minutes
 
 **Step 1: Get a Gemini API key**
@@ -80,6 +86,32 @@ Then point your config at the local build:
   }
 }
 ```
+
+### Claude Code (CLI)
+
+Claude Code uses a different registration mechanism -- it doesn't read `claude_desktop_config.json`. Use `claude mcp add` instead:
+
+```bash
+claude mcp add -e GEMINI_API_KEY=your-api-key-here -s user gemini -- npx -y @houtini/gemini-mcp
+```
+
+With optional image output directory:
+
+```bash
+claude mcp add \
+  -e GEMINI_API_KEY=your-api-key-here \
+  -e GEMINI_IMAGE_OUTPUT_DIR=/path/to/output \
+  -s user \
+  gemini -- npx -y @houtini/gemini-mcp
+```
+
+Verify with:
+
+```bash
+claude mcp get gemini
+```
+
+You should see `Status: Connected`.
 
 ---
 
