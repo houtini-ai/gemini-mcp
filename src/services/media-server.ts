@@ -82,7 +82,8 @@ export class MediaServer {
     const normalResolved = normalize(resolved);
 
     // Ensure the file is within the allowed directory
-    if (!normalResolved.startsWith(normalAllowed)) {
+    // Use toLowerCase() to handle Windows drive letter casing (D:\ vs d:\)
+    if (!normalResolved.toLowerCase().startsWith(normalAllowed.toLowerCase())) {
       logger.warn('Media server: path outside allowed directory', {
         path: absPath,
         allowedDir: this.allowedDir,
@@ -150,7 +151,7 @@ export class MediaServer {
     const normalFile = normalize(filePath);
 
     // Path traversal protection
-    if (!normalFile.startsWith(normalAllowed)) {
+    if (!normalFile.toLowerCase().startsWith(normalAllowed.toLowerCase())) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('Forbidden');
       return;

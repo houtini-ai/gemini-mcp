@@ -100,6 +100,9 @@ tmp/
 *.tmp
 *.temp
 
+# Claude Code working files (contain local paths/debug info)
+CLAUDE.md
+
 # Development artifacts
 *-handover*.md
 *-test*.md

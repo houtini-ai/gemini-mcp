@@ -3,22 +3,51 @@ import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import { resolve } from 'path';
 import logger from '../utils/logger.js';
 import { McpError, createToolResult } from '../utils/error-handler.js';
-import { processGeneratedImage } from '../utils/image-utils.js';
+import { processGeneratedImage, type ProcessedImage } from '../utils/image-utils.js';
 import { resolveImageInputs } from '../utils/resolve-images.js';
 import { savedFileMessage } from '../utils/tool-wrapper.js';
 import { imageInputSchema } from './schemas.js';
 import type { ToolContext } from './types.js';
 
-function buildTextLines(
-  savedPath: string | undefined,
-  previewPath: string | undefined,
+/**
+ * Build the MCP content array for an image tool result.
+ *
+ * Pattern: resize-for-transport
+ *  - Full-res original is saved to disk (and served via media server for the viewer).
+ *  - A resized JPEG preview (≤800px) is returned as an inline `image` content block
+ *    so the model can "see" the image and the client can display it.
+ *  - The text block contains the file path + metadata so the user can find the original.
+ *
+ * This keeps the total tool result well under the 1MB MCP transport cap.
+ */
+function buildContent(
+  processed: ProcessedImage | undefined,
   description: string | undefined,
+  prompt: string,
   groundingSources?: Array<{ title: string; url: string }>,
   thoughtSignature?: string
-): string[] {
+) {
+  const content: Array<
+    | { type: 'text'; text: string }
+    | { type: 'image'; data: string; mimeType: string }
+  > = [];
+
+  // 1. Inline resized preview — lets the model and client see the image
+  if (processed) {
+    content.push({
+      type: 'image',
+      data: processed.previewBase64,
+      mimeType: processed.previewMimeType,
+    });
+  }
+
+  // 2. Text metadata
   const lines: string[] = [];
-  if (savedPath) lines.push(savedFileMessage('Image saved', savedPath));
-  if (previewPath) lines.push(savedFileMessage('HTML preview', previewPath));
+  if (processed?.savedPath) lines.push(savedFileMessage('Image saved (full-res)', processed.savedPath));
+  if (processed?.previewPath) lines.push(savedFileMessage('HTML preview', processed.previewPath));
+  if (processed) {
+    lines.push(`Preview: ${processed.previewWidth}x${processed.previewHeight}px JPEG (${Math.round(processed.previewBase64.length * 0.75 / 1024)}KB)`);
+  }
   if (description) lines.push(`\n${description}`);
 
   if (groundingSources && groundingSources.length > 0) {
@@ -28,13 +57,49 @@ function buildTextLines(
     });
   }
 
-  // Surface thoughtSignature so Claude can pass it to subsequent edit_image calls
-  // for conversational editing with Gemini 3 Pro Image
   if (thoughtSignature) {
     lines.push(`\n**thoughtSignature** (for conversational editing — pass to edit_image): \`${thoughtSignature}\``);
   }
 
-  return lines;
+  content.push({
+    type: 'text',
+    text: lines.join('\n') || 'Image generated successfully',
+  });
+
+  return content;
+}
+
+/**
+ * Build lightweight structuredContent for the App viewer.
+ * Contains ZERO base64 data — viewer loads the image via media server URL.
+ */
+function buildStructuredContent(
+  ctx: ToolContext,
+  processed: ProcessedImage | undefined,
+  description: string | undefined,
+  prompt: string,
+  groundingSources?: Array<{ title: string; url: string }>
+) {
+  const imageUrl = processed?.savedPath
+    ? ctx.mediaServer.getFileUrl(processed.savedPath)
+    : undefined;
+
+  if (processed?.savedPath && !imageUrl) {
+    logger.warn('Media server URL unavailable — image saved outside allowed directory', {
+      savedPath: processed.savedPath,
+      allowedDir: ctx.outputDir,
+    });
+  }
+
+  return {
+    imageUrl: imageUrl ?? undefined,
+    mimeType: 'image/jpeg',
+    savedPath: processed?.savedPath,
+    previewPath: processed?.previewPath,
+    description,
+    prompt,
+    groundingSources,
+  };
 }
 
 export function register(ctx: ToolContext): void {
@@ -101,7 +166,6 @@ export function register(ctx: ToolContext): void {
           globalMediaResolution: global_media_resolution
         });
 
-        // Resolve any filePath references in input images server-side
         const resolvedImages = images ? await resolveImageInputs(images as any) : undefined;
 
         const result = await ctx.imageService.generateImage({
@@ -120,48 +184,32 @@ export function register(ctx: ToolContext): void {
           ? resolve(outputPath)
           : resolve(ctx.outputDir, `gemini-${Date.now()}.png`);
 
-        let savedPath: string | undefined;
-        let previewPath: string | undefined;
-        let previewImageData: string | undefined;
+        let processed: ProcessedImage | undefined;
 
         if (firstImage?.base64Data) {
-          const processed = await processGeneratedImage(
+          processed = await processGeneratedImage(
             firstImage.base64Data,
             firstImage.mimeType || 'image/png',
             resolvedSavePath,
             prompt,
             result.description
           );
-          savedPath = processed.savedPath;
-          previewPath = processed.previewPath;
-          previewImageData = processed.previewImageData;
         }
 
-        // Extract thoughtSignature from response parts for conversational editing
-        const thoughtSignature = result.parts.find(p => !!p.thoughtSignature)?.thoughtSignature;
-
-        const textLines = buildTextLines(savedPath, previewPath, result.description, result.groundingSources, thoughtSignature);
-
-        // Serve full-res image via media server (bypasses MCP 1MB limit)
-        const imageUrl = savedPath ? ctx.mediaServer.getFileUrl(savedPath) : undefined;
+        // thoughtSignature is intentionally excluded from the tool result.
+        // It can be 500KB+ and would blow the 1MB MCP transport cap.
+        // For conversational editing, the user should use edit_image and pass
+        // the thoughtSignature from the saved file metadata if needed.
+        const droppedSig = result.parts.find(p => !!p.thoughtSignature)?.thoughtSignature;
+        if (droppedSig) {
+          logger.info('Dropping thoughtSignature from tool result', {
+            signatureKB: Math.round(droppedSig.length / 1024)
+          });
+        }
 
         return {
-          structuredContent: {
-            imageUrl,
-            base64Data: previewImageData || '',
-            mimeType: 'image/jpeg',
-            savedPath,
-            previewPath,
-            description: result.description,
-            prompt,
-            groundingSources: result.groundingSources
-          },
-          content: [
-            {
-              type: 'text' as const,
-              text: textLines.join('\n') || 'Image generated successfully'
-            }
-          ]
+          structuredContent: buildStructuredContent(ctx, processed, result.description, prompt, result.groundingSources),
+          content: buildContent(processed, result.description, prompt, result.groundingSources, undefined),
         };
       } catch (error) {
         logger.error('generate_image tool failed', { error });
@@ -218,7 +266,6 @@ export function register(ctx: ToolContext): void {
           globalMediaResolution: global_media_resolution
         });
 
-        // Resolve any filePath references in input images server-side
         const resolvedImages = await resolveImageInputs(images as any);
 
         const result = await ctx.imageService.generateImage({
@@ -235,48 +282,23 @@ export function register(ctx: ToolContext): void {
           ? resolve(outputPath)
           : resolve(ctx.outputDir, `gemini-edit-${Date.now()}.png`);
 
-        let savedPath: string | undefined;
-        let previewPath: string | undefined;
-        let previewImageData: string | undefined;
+        let processed: ProcessedImage | undefined;
 
         if (firstImage?.base64Data) {
-          const processed = await processGeneratedImage(
+          processed = await processGeneratedImage(
             firstImage.base64Data,
             firstImage.mimeType || 'image/png',
             resolvedSavePath,
             `[EDIT] ${prompt}`,
             result.description
           );
-          savedPath = processed.savedPath;
-          previewPath = processed.previewPath;
-          previewImageData = processed.previewImageData;
         }
 
-        // Extract thoughtSignature from response parts for conversational editing
-        const thoughtSignature = result.parts.find(p => !!p.thoughtSignature)?.thoughtSignature;
-
-        const textLines = buildTextLines(savedPath, previewPath, result.description, result.groundingSources, thoughtSignature);
-
-        // Serve full-res image via media server (bypasses MCP 1MB limit)
-        const imageUrl = savedPath ? ctx.mediaServer.getFileUrl(savedPath) : undefined;
+        const editPrompt = `[EDIT] ${prompt}`;
 
         return {
-          structuredContent: {
-            imageUrl,
-            base64Data: previewImageData || '',
-            mimeType: 'image/jpeg',
-            savedPath,
-            previewPath,
-            description: result.description,
-            prompt: `[EDIT] ${prompt}`,
-            groundingSources: result.groundingSources
-          },
-          content: [
-            {
-              type: 'text' as const,
-              text: textLines.join('\n') || 'Image edited successfully'
-            }
-          ]
+          structuredContent: buildStructuredContent(ctx, processed, result.description, editPrompt, result.groundingSources),
+          content: buildContent(processed, result.description, editPrompt, result.groundingSources, undefined),
         };
       } catch (error) {
         logger.error('edit_image tool failed', { error });

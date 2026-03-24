@@ -1,0 +1,182 @@
+:root {
+  color-scheme: light dark;
+  /* Light mode defaults */
+  --bg: var(--color-background-primary, #ffffff);
+  --panel: var(--color-background-secondary, #f3f4f6);
+  --text: var(--color-text-primary, #1a1a1a);
+  --text-secondary: var(--color-text-secondary, #6b7280);
+  --border: var(--color-border-default, #d1d5db);
+  --accent: var(--color-accent-primary, #059669);
+  /* Landing page viewport backgrounds */
+  --viewport-bg: #ffffff;
+  --wrapper-bg: #f0f0f0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--color-background-primary, #111827);
+    --panel: var(--color-background-secondary, #1f2937);
+    --text: var(--color-text-primary, #f3f4f6);
+    --text-secondary: var(--color-text-secondary, #9ca3af);
+    --border: var(--color-border-default, #374151);
+    --accent: var(--color-accent-primary, #6ee7b7);
+    --viewport-bg: #1a1a2e;
+    --wrapper-bg: #0f0f23;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+#content {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.toolbar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+button {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+button:hover { opacity: 0.8; }
+button:active { opacity: 0.6; }
+button.copied { background: #10b981; }
+
+.path-display {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', Monaco, monospace;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-path {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.preview-container {
+  flex: 1;
+  overflow: auto;
+  background: var(--viewport-bg);
+  position: relative;
+  min-height: 0; /* allow flex child to shrink and scroll */
+}
+
+iframe {
+  width: 100%;
+  border: none;
+  display: block;
+  /* Start tall so landing page content is visible immediately;
+     JS will auto-resize to exact content height after load. */
+  min-height: 100%;
+}
+
+.resize-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.resize-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.resize-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.viewport-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100%;
+  background: var(--viewport-bg);
+}
+
+/* In device modes, add padding around the "device frame" */
+.viewport-wrapper.device-mode {
+  padding: 24px;
+  background: var(--wrapper-bg);
+}
+
+.viewport {
+  background: white;
+  transition: width 0.3s ease;
+  width: 100%;
+}
+
+/* Device modes get shadow + constrained width */
+.viewport.mobile,
+.viewport.tablet {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.viewport.mobile {
+  width: 375px;
+}
+
+.viewport.tablet {
+  width: 768px;
+}
+
+.viewport.desktop {
+  width: 100%;
+}

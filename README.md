@@ -4,7 +4,7 @@
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?style=flat-square)](https://registry.modelcontextprotocol.io)
 [![Known Vulnerabilities](https://snyk.io/test/github/houtini-ai/gemini-mcp/badge.svg)](https://snyk.io/test/github/houtini-ai/gemini-mcp)
 
-**I've been running this MCP server in my Claude Desktop setup for several months, and it's one of the few I leave enabled permanently.** Not because Gemini replaces Claude -- it doesn't -- but because grounded search, deep research, image generation, and video are things Gemini does well. Having them as tools inside Claude beats switching between browser tabs.
+I've been running this MCP server in my Claude Desktop setup for months. It's one of the few I leave on permanently — not because Gemini replaces Claude, but because grounded search, image generation, SVG diagrams, and video are things Gemini does genuinely well. Having them as tools inside Claude beats switching browser tabs.
 
 Thirteen tools. One `npx` command.
 
@@ -14,19 +14,25 @@ Thirteen tools. One `npx` command.
   </a>
 </p>
 
-### MCP App previews
-
-Generated images and diagrams render inline in Claude Desktop with zoom controls, file paths, and prompt context:
-
-| Image generation | SVG / diagram generation |
-|:---:|:---:|
-| ![Image preview in MCP App](image-preview-mcp-app.jpg) | ![Diagram preview in MCP App](diagram-preview-mcp-app.jpg) |
-
 ---
 
 > **Quick Navigation**
 >
-> [Get started](#get-started-in-two-minutes) | [What it does](#what-it-does) | [Image output](#image-output-and-storage) | [Configuration](#configuration-reference) | [Tools](#tools-reference) | [Models](#model-reference) | [Requirements](#requirements)
+> [Get started](#get-started-in-two-minutes) | [What it does](#what-it-does) | [SVG generation](#svg-generation) | [Image output](#image-output-and-storage) | [Configuration](#configuration-reference) | [Tools](#tools-reference) | [Models](#model-reference) | [Requirements](#requirements)
+
+---
+
+## What it looks like
+
+Generated images, SVGs, and videos render inline in Claude Desktop with zoom controls, file paths, and prompt context:
+
+| Image generation | SVG / diagram generation |
+|:---:|:---:|
+| ![Image preview](image-preview-mcp-app.jpg) | ![SVG preview](diagram-preview-mcp-app.jpg) |
+
+| Image embed | SVG embed | Video embed |
+|:---:|:---:|:---:|
+| ![Image embed](image-embed.png) | ![SVG embed](svg-embed.png) | ![Video embed](video-embed.png) |
 
 ---
 
@@ -34,7 +40,7 @@ Generated images and diagrams render inline in Claude Desktop with zoom controls
 
 **Step 1: Get a Gemini API key**
 
-Go to [Google AI Studio](https://aistudio.google.com/apikey) and create one. The free tier covers most development use -- you'll hit rate limits on deep research if you're hammering it, but for day-to-day work it's fine.
+Go to [Google AI Studio](https://aistudio.google.com/apikey) and create one. The free tier covers most development use — you'll hit rate limits on deep research if you're hammering it, but for day-to-day work it's fine.
 
 **Step 2: Add to your Claude Desktop config**
 
@@ -58,7 +64,8 @@ Config file locations:
 
 **Step 3: Restart Claude Desktop**
 
-That's it. The tools show up automatically. `npx` pulls the package on first run -- no separate install.
+That's it. Tools show up automatically. `npx` pulls the package on first run — no separate install needed.
+
 
 ### Local build instead
 
@@ -89,7 +96,7 @@ Then point your config at the local build:
 
 ### Claude Code (CLI)
 
-Claude Code uses a different registration mechanism -- it doesn't read `claude_desktop_config.json`. Use `claude mcp add` instead:
+Claude Code uses a different registration mechanism — it doesn't read `claude_desktop_config.json`. Use `claude mcp add` instead:
 
 ```bash
 claude mcp add -e GEMINI_API_KEY=your-api-key-here -s user gemini -- npx -y @houtini/gemini-mcp
@@ -105,13 +112,7 @@ claude mcp add \
   gemini -- npx -y @houtini/gemini-mcp
 ```
 
-Verify with:
-
-```bash
-claude mcp get gemini
-```
-
-You should see `Status: Connected`.
+Verify with `claude mcp get gemini` — you should see `Status: Connected`.
 
 ---
 
@@ -123,9 +124,7 @@ You should see `Status: Connected`.
 Use gemini:gemini_chat to ask: "What changed in the MCP spec in the last month?"
 ```
 
-Grounding is on by default. Gemini searches Google before answering, so you get current information rather than training data cutoff answers. Sources come back as markdown links.
-
-For questions where you want reasoning over live search -- "explain this code" or similar -- set `grounding: false`.
+Grounding is on by default. Gemini searches Google before answering, so you get current information rather than training cutoff answers. Sources come back as markdown links. For questions where you want pure reasoning — "explain this code" or similar — set `grounding: false`.
 
 Supports `thinking_level` on Gemini 3 models: `high` for maximum reasoning depth, `low` to keep it fast, `medium`/`minimal` on Gemini 3 Flash only.
 
@@ -137,9 +136,10 @@ Use gemini:gemini_deep_research with:
   max_iterations=5
 ```
 
-Runs multiple grounded search iterations, then synthesises a full report. Takes 2-5 minutes depending on complexity. Worth it for anything where you need comprehensive coverage rather than a quick answer.
+Runs multiple grounded search iterations then synthesises a full report. Takes 2-5 minutes depending on complexity — worth it for anything needing comprehensive coverage rather than a quick answer.
 
-Set `max_iterations` to 3-4 in Claude Desktop (4-minute tool timeout). In IDEs (Cursor, Windsurf, VS Code) or agent frameworks with longer timeout tolerance, 7-10 iterations produces noticeably better synthesis. Pass `focus_areas` as an array to steer toward specific angles.
+Set `max_iterations` to 3-4 in Claude Desktop (4-minute tool timeout). In IDEs (Cursor, Windsurf, VS Code) or agent frameworks, 7-10 iterations produces noticeably better synthesis. Pass `focus_areas` as an array to steer toward specific angles.
+
 
 ### Image generation with search grounding
 
@@ -152,7 +152,7 @@ Use gemini:generate_image with:
 
 Default model is `gemini-3-pro-image-preview` (Nano Banana Pro). Also supports `gemini-2.5-flash-image` for faster generation.
 
-When `use_search=true`, Gemini searches Google for current data before generating. Financial and news queries work reliably and return 2-5 grounding sources as markdown links. Weather queries are inconsistent (Gemini API limitation, not a code issue).
+When `use_search=true`, Gemini searches Google for current data before generating. Financial and news queries work reliably. The full-resolution image saves to disk automatically — the inline preview is resized for transport but the original is untouched.
 
 ### Video generation with Veo 3.1
 
@@ -163,17 +163,20 @@ Use gemini:generate_video with:
   durationSeconds=8
 ```
 
-Uses Google's Veo 3.1 model. Generates 4-8 second videos at up to 4K resolution with native synchronised audio. Processing takes 2-5 minutes -- the tool polls automatically until the video is ready.
+Uses Google's Veo 3.1 model. Generates 4-8 second videos at up to 4K with native synchronised audio. Processing takes 2-5 minutes — the tool polls automatically until ready.
 
-Options worth knowing about:
-- `aspectRatio` -- `16:9` (landscape, default) or `9:16` (portrait/vertical)
-- `generateAudio` -- on by default, produces dialogue and sound effects matching the prompt
-- `sampleCount` -- generate up to 4 variations in one call
-- `seed` -- for deterministic output across runs
-- `generateThumbnail` -- extracts a frame via ffmpeg (needs ffmpeg in PATH)
-- `generateHTMLPlayer` -- creates a local HTML player alongside the video
+Options worth knowing:
+- `aspectRatio` — `16:9` landscape or `9:16` portrait/vertical
+- `generateAudio` — on by default, produces dialogue and sound effects matching the prompt
+- `sampleCount` — generate up to 4 variations in one call
+- `seed` — deterministic output across runs
+- `generateThumbnail` — extracts a frame via ffmpeg (needs ffmpeg in PATH)
+- `firstFrameImage` — animate from a starting image (image-to-video)
+
 
 ### SVG generation
+
+This is the one people underestimate. SVG output isn't just diagrams — it's production-ready vector graphics you can drop straight into a codebase, a presentation, or a web page. Clean, scalable, no raster artefacts.
 
 ```
 Use gemini:generate_svg with:
@@ -183,11 +186,22 @@ Use gemini:generate_svg with:
   height=600
 ```
 
-Generates clean, production-ready SVG code for diagrams, illustrations, icons, and data visualisations. Styles: `technical` (diagrams), `artistic` (illustrations), `minimal` (simple), `data-viz` (charts).
+Four styles:
+
+| Style | Best for |
+|-------|----------|
+| `technical` | Architecture diagrams, flowcharts, system maps |
+| `artistic` | Illustrations, decorative graphics, icons |
+| `minimal` | Clean data visualisations, simple charts |
+| `data-viz` | Complex charts, dashboards, infographics |
+
+The output is actual SVG code — edit it, animate it, embed it in HTML, commit it to a repo. No rasterising, no export steps, no Figma required.
+
+![SVG generation in Claude Desktop](svg-embed.png)
 
 ### Image editing and analysis
 
-**Conversational editing** -- Gemini 3 Pro Image maintains context across editing turns using thought signatures. The server captures these automatically. Pass them back on subsequent edit calls for full continuity:
+**Conversational editing** — Gemini 3 Pro Image maintains context across editing turns. Pass thought signatures back on subsequent `edit_image` calls for full continuity:
 
 ```
 Use gemini:edit_image with:
@@ -195,21 +209,18 @@ Use gemini:edit_image with:
   images=[{data: imageBase64, mimeType: "image/png", thoughtSignature: "fromPreviousCall"}]
 ```
 
-Skip thought signatures and each edit starts from scratch.
-
-**Analysis** -- two tools for different purposes:
-- `describe_image` -- Fast general descriptions using Gemini 3 Flash
-- `analyze_image` -- Structured extraction and detailed reasoning using Gemini 3.1 Pro
+**Analysis** — two tools for different purposes:
+- `describe_image` — Fast general descriptions using Gemini 3 Flash
+- `analyze_image` — Structured extraction and detailed reasoning using Gemini 3.1 Pro
 
 **Load local files:**
 ```
 Use gemini:load_image_from_path with filePath="C:/screenshots/error.png"
 ```
-Returns base64 data ready for any image tool.
 
 ### Media resolution control
 
-Reduce token usage by up to 75% whilst maintaining quality:
+Reduce token usage by up to 75% whilst maintaining quality for the task:
 
 | Level | Tokens | Savings | Best for |
 |-------|--------|---------|----------|
@@ -218,7 +229,8 @@ Reduce token usage by up to 75% whilst maintaining quality:
 | `MEDIA_RESOLUTION_HIGH` | 1120 | default | Detailed analysis |
 | `MEDIA_RESOLUTION_ULTRA_HIGH` | 2000+ | per-image only | Maximum detail |
 
-For PDF OCR, MEDIUM gives identical text extraction quality to HIGH at half the tokens. Set `global_media_resolution` to apply to all images, or override per-image with `mediaResolution`.
+For PDF OCR, MEDIUM gives identical text extraction quality to HIGH at half the tokens.
+
 
 ### Landing page generation
 
@@ -231,17 +243,17 @@ Use gemini:generate_landing_page with:
   sections=["hero", "features", "pricing", "cta"]
 ```
 
-Returns a self-contained HTML file -- inline CSS and vanilla JS, no external dependencies. Styles: `minimal`, `bold`, `corporate`, `startup`.
+Returns a self-contained HTML file — inline CSS and vanilla JS, no external dependencies. Styles: `minimal`, `bold`, `corporate`, `startup`.
 
 ### Professional chart design systems
 
-The `gemini_prompt_assistant` tool includes 9 professional chart design systems:
+`gemini_prompt_assistant` includes 9 professional chart design systems:
 
 | System | Inspiration | Best for |
 |--------|------------|----------|
-| **storytelling** | Cole Nussbaumer Knaflic | Executive presentations -- everything muted except one bold highlight |
-| **financial** | Financial Times | Editorial journalism -- FT Pink background, serif titles |
-| **terminal** | Bloomberg / Fintech | High-density dark mode with electric neon |
+| **storytelling** | Cole Nussbaumer Knaflic | Executive presentations |
+| **financial** | Financial Times | Editorial journalism — FT Pink, serif titles |
+| **terminal** | Bloomberg / Fintech | High-density dark mode with neon |
 | **modernist** | W.E.B. Du Bois | Bold geometric blocks, stark contrasts |
 | **professional** | IBM Carbon / Tailwind | Enterprise dashboards |
 | **editorial** | FiveThirtyEight / Economist | Data journalism |
@@ -249,28 +261,19 @@ The `gemini_prompt_assistant` tool includes 9 professional chart design systems:
 | **minimal** | Edward Tufte | Maximum data-ink ratio |
 | **dark** | Observable | Modern dark mode |
 
-```
-Use gemini:gemini_prompt_assistant with:
-  request_type="template"
-  use_case="product"
-  desired_outcome="Generate a professional product comparison chart"
-```
-
 ### Help system
 
 ```
 Use gemini:gemini_help with topic="overview"
 ```
 
-Documentation for all features without leaving Claude. Topics: `overview`, `image_generation`, `image_editing`, `image_analysis`, `chat`, `deep_research`, `grounding`, `media_resolution`, `models`, `all`.
+Full documentation without leaving Claude. Topics: `overview`, `image_generation`, `image_editing`, `image_analysis`, `chat`, `deep_research`, `grounding`, `media_resolution`, `models`, `all`.
 
 ---
 
 ## Image output and storage
 
-**Default behaviour:** Images return as inline base64 previews (quality 100, 1024px) rendered directly in Claude.
-
-**Persistent storage:** Set `GEMINI_IMAGE_OUTPUT_DIR` to auto-save all generated images:
+By default, images return as inline previews rendered directly in Claude. Set `GEMINI_IMAGE_OUTPUT_DIR` to auto-save everything:
 
 ```json
 "env": {
@@ -279,18 +282,14 @@ Documentation for all features without leaving Claude. Topics: `overview`, `imag
 }
 ```
 
-Every image saves with a timestamp filename. The tool returns both the inline preview and the file path.
+The server uses a two-tier approach to handle the MCP protocol's 1MB JSON-RPC limit whilst preserving full-resolution files:
 
-**Per-call override:** Pass `outputPath` on any generation tool to save to a specific location.
+| Tier | Purpose |
+|------|---------|
+| **Full-res** | Saved to disk immediately, untouched |
+| **Preview** | Resized JPEG for inline transport — dynamically sized to fit under the cap |
 
-The server uses a two-tier compression approach to handle the MCP protocol's ~1MB JSON-RPC limit whilst preserving full-resolution files on disk:
-
-| Tier | Quality | Max dimension | Purpose |
-|------|---------|---------------|---------|
-| **Full-res** | Original | Original | Saved to disk |
-| **Viewer preview** | 100 | 1024px | MCP App inline preview (~400KB) |
-
-Gemini returns 2-5MB images. The full image is saved to disk immediately, and a compressed preview is created for the MCP App viewer.
+Gemini returns 2-5MB images. The resize is smart — it measures the non-image overhead in each response and calculates the exact binary budget available, stepping down dimensions (800→600→400→300→200px) until it fits. The full image is always there on disk.
 
 ---
 
@@ -298,32 +297,31 @@ Gemini returns 2-5MB images. The full image is saved to disk immediately, and a 
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GEMINI_API_KEY` | Yes | -- | Google AI API key from [AI Studio](https://aistudio.google.com/apikey) |
+| `GEMINI_API_KEY` | Yes | — | Google AI API key from [AI Studio](https://aistudio.google.com/apikey) |
 | `GEMINI_DEFAULT_MODEL` | No | `gemini-3.1-pro-preview` | Default model for `gemini_chat` and `analyze_image` |
 | `GEMINI_DEFAULT_GROUNDING` | No | `true` | Enable Google Search grounding by default |
-| `GEMINI_IMAGE_OUTPUT_DIR` | No | -- | Auto-save directory for generated images |
+| `GEMINI_IMAGE_OUTPUT_DIR` | No | — | Auto-save directory for generated images and videos |
 | `GEMINI_ALLOW_EXPERIMENTAL` | No | `false` | Include experimental/preview models in auto-discovery |
 | `GEMINI_MCP_LOG_FILE` | No | `false` | Write logs to `~/.gemini-mcp/logs/` |
 | `DEBUG_MCP` | No | `false` | Log to stderr for debugging tool calls |
 
----
 
 ## Tools reference
 
 | Tool | Description |
 |------|-------------|
-| `gemini_chat` | Chat with Gemini 3.1 Pro. Google Search grounding on by default. Supports `thinking_level` for Gemini 3 |
+| `gemini_chat` | Chat with Gemini 3.1 Pro. Google Search grounding on by default. Supports `thinking_level` |
 | `gemini_deep_research` | Multi-step iterative research with Google Search. Synthesises comprehensive reports |
-| `gemini_list_models` | Lists available models from the API |
+| `gemini_list_models` | Lists available models from the Gemini API |
 | `gemini_help` | Documentation for all features without leaving Claude |
 | `gemini_prompt_assistant` | Expert guidance for image generation with 9 chart design systems |
-| `generate_image` | Image generation with search grounding and thought signatures for conversational editing |
-| `edit_image` | Edit images with natural-language instructions. Supports multi-turn continuity |
+| `generate_image` | Image generation with optional search grounding. Full-res saved to disk |
+| `edit_image` | Edit images with natural-language instructions. Multi-turn continuity via thought signatures |
 | `describe_image` | Fast image descriptions using Gemini 3 Flash |
 | `analyze_image` | Structured extraction and analysis using Gemini 3.1 Pro |
 | `load_image_from_path` | Read a local image file and return base64 for any image tool |
-| `generate_video` | Video generation with Veo 3.1 -- 4-8 seconds at up to 4K with native audio |
-| `generate_svg` | Production-ready SVG graphics for diagrams, illustrations, and data visualisations |
+| `generate_video` | Video generation with Veo 3.1 — 4-8 seconds at up to 4K with native audio |
+| `generate_svg` | Production-ready SVG: diagrams, illustrations, icons, data visualisations |
 | `generate_landing_page` | Self-contained HTML landing pages with inline CSS/JS |
 
 ---
@@ -333,12 +331,12 @@ Gemini returns 2-5MB images. The full image is saved to disk immediately, and a 
 | Model | Used by | Notes |
 |-------|---------|-------|
 | `gemini-3.1-pro-preview` | `gemini_chat`, `analyze_image` | Default. Advanced reasoning |
-| `gemini-3-pro-image-preview` | `generate_image`, `edit_image` | Nano Banana Pro -- highest quality generation |
+| `gemini-3-pro-image-preview` | `generate_image`, `edit_image` | Nano Banana Pro — highest quality image generation |
 | `gemini-2.5-flash-image` | `generate_image` (optional) | Faster generation, higher volume |
 | `gemini-3-flash-preview` | `describe_image` | Fast general descriptions |
-| `veo-3.1-generate-preview` | `generate_video` | Veo 3.1 -- 4K video with native audio |
+| `veo-3.1-generate-preview` | `generate_video` | Veo 3.1 — 4K video with native audio |
 
-**Gemini 3 notes:** Temperature is forced to 1.0 on Gemini 3 models (Google's requirement -- lower values cause looping). Thought signatures are captured automatically for conversational image editing. Thinking level only applies to `gemini_chat`.
+**Gemini 3 notes:** Temperature is forced to 1.0 on Gemini 3 models (Google's requirement — lower values cause looping). Thinking level only applies to `gemini_chat`.
 
 ---
 

@@ -15,7 +15,8 @@
       "Bash(xargs ls:*)",
       "Bash(cross-env INPUT=src/ui/image-viewer.html OUT_DIR=dist/image-viewer npx vite build:*)",
       "Bash(INPUT=src/ui/image-viewer.html OUT_DIR=dist/image-viewer npx vite build:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git pull:*)"
     ]
   }
 }

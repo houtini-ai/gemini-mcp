@@ -20,14 +20,14 @@ export function register(ctx: ToolContext): void {
           .describe('Model to use for deep research (defaults to latest available)'),
         max_iterations: z.number()
           .int()
-          .min(3)
+          .min(1)
           .max(10)
           .optional()
-          .default(5)
+          .default(1)
           .describe(
-            'Number of research iterations (3-10, default 5). Environment guidance: ' +
-            'Claude Desktop: use 3-4 (4-min timeout). ' +
-            'Agent SDK/IDEs (VSCode, Cursor, Windsurf)/AI platforms (Cline, Roo-Cline): can use 7-10 (longer timeout tolerance)'
+            'Number of research iterations (1-10, default 1). Environment guidance: ' +
+            'Claude Desktop: use 1-2 (4-min timeout). ' +
+            'Agent SDK/IDEs (VSCode, Cursor, Windsurf)/AI platforms (Cline, Roo-Cline): can use 5-7 (longer timeout tolerance)'
           ),
         focus_areas: z.array(z.string())
           .optional()
@@ -42,7 +42,7 @@ export function register(ctx: ToolContext): void {
       try {
         logger.info('Starting deep research', {
           question: research_question,
-          maxIterations: max_iterations || 5
+          maxIterations: max_iterations || 1
         });
 
         const deepResearchTool = new GeminiDeepResearchTool(ctx.geminiService);

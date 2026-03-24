@@ -9,9 +9,10 @@ export interface GeminiConfig {
   apiKey?: string;
   safetySettings: SafetySetting[];
   // Task-specific default models
-  defaultModel: string;           // chat / text generation
-  defaultImageAnalysisModel: string;  // analyze_image (multimodal reasoning)
-  defaultImageDescribeModel: string;  // describe_image (lighter vision task)
+  defaultModel: string;                // chat / text generation
+  defaultDeepResearchModel: string;    // deep_research (flash for speed, avoids MCP timeout)
+  defaultImageAnalysisModel: string;   // analyze_image (multimodal reasoning)
+  defaultImageDescribeModel: string;   // describe_image (lighter vision task)
   defaultImageGenerationModel: string; // generate_image / edit_image
   maxTokens: number;
   temperature: number;

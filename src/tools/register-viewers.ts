@@ -23,6 +23,7 @@ const VIEWERS: ViewerSpec[] = [
     resourceId: 'gemini-image-viewer',
     uri: 'ui://gemini/image-viewer.html',
     segments: ['image-viewer', 'src', 'ui', 'image-viewer.html'],
+    needsMediaServer: true,
   },
   {
     name: 'Video Viewer',

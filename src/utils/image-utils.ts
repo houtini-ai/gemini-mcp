@@ -1,7 +1,7 @@
 import { writeFile, mkdir } from 'fs/promises';
 import { dirname, resolve } from 'path';
 import logger from './logger.js';
-import { compressForViewer } from './image-compress.js';
+import { resizeForTransport } from './image-compress.js';
 
 export async function saveImageToFile(base64Data: string, outputPath: string): Promise<string> {
   const absolutePath = resolve(outputPath);
@@ -182,7 +182,7 @@ export async function createImagePreviewHtml(
 
     <div class="content">
       <div class="image-container">
-        <img src="${imageFilename}" alt="Generated image">
+        <img src="${imagePath.replace(/\\/g, '/')}" alt="Generated image">
       </div>
 
       <div class="metadata">
@@ -215,7 +215,7 @@ export async function createImagePreviewHtml(
       </div>
 
       <div class="actions">
-        <a href="${imageFilename}" download class="btn">Download Image</a>
+        <a href="${imagePath.replace(/\\/g, '/')}" download class="btn">Download Image</a>
       </div>
     </div>
 
@@ -249,7 +249,12 @@ export async function createImagePreviewHtml(
 export interface ProcessedImage {
   savedPath: string;
   previewPath: string;
-  previewImageData: string;
+  /** Base64-encoded resized JPEG preview for inline transport */
+  previewBase64: string;
+  previewMimeType: 'image/jpeg';
+  previewWidth: number;
+  previewHeight: number;
+  originalBytes: number;
 }
 
 export async function processGeneratedImage(
@@ -261,19 +266,35 @@ export async function processGeneratedImage(
 ): Promise<ProcessedImage> {
   const savedPath = await saveImageToFile(base64Data, savePath);
   const previewPath = await createImagePreviewHtml(savedPath, prompt, description);
-  const compressed = await compressForViewer(base64Data, mimeType);
 
+  // Measure non-image overhead: text content that will accompany the image
+  // in the tool result (file paths + description + JSON-RPC envelope framing)
+  const nonImageOverhead = Buffer.byteLength(
+    JSON.stringify({ savedPath, previewPath, description: description ?? '', prompt }),
+    'utf8'
+  ) + 2_000; // 2KB extra for JSON-RPC envelope keys and framing
+
+  const resized = await resizeForTransport(base64Data, mimeType, nonImageOverhead);
+
+  const base64Chars = resized.base64.length;
   logger.info('Image saved successfully', {
     savedPath,
     previewPath,
-    originalKB: Math.round(compressed.originalBytes / 1024),
-    previewKB: Math.round(compressed.previewBytes / 1024),
-    compressionRatio: (compressed.originalBytes / compressed.previewBytes).toFixed(1) + 'x',
+    originalKB: Math.round(resized.originalBytes / 1024),
+    previewKB: Math.round(resized.previewBytes / 1024),
+    previewDimensions: `${resized.width}x${resized.height}`,
+    ratio: (resized.originalBytes / resized.previewBytes).toFixed(1) + 'x',
+    base64Chars,
+    base64KB: Math.round(base64Chars / 1024),
   });
 
   return {
     savedPath,
     previewPath,
-    previewImageData: compressed.base64,
+    previewBase64: resized.base64,
+    previewMimeType: resized.mimeType,
+    previewWidth: resized.width,
+    previewHeight: resized.height,
+    originalBytes: resized.originalBytes,
   };
 }

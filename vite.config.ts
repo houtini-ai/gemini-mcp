@@ -12,5 +12,6 @@ export default defineConfig({
     rollupOptions: { input: INPUT },
     outDir: OUT_DIR,
     emptyOutDir: false,
+    cssCodeSplit: false,
   },
 });

@@ -67,8 +67,9 @@ const logger = winston.createLogger({
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
     winston.format.colorize(),
-    winston.format.printf(({ timestamp, level, message, stack }) => {
-      return `${timestamp} [${level}]: ${message}${stack ? '\n' + stack : ''}`;
+    winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+      const metaStr = Object.keys(meta).length ? ' ' + JSON.stringify(meta) : '';
+      return `${timestamp} [${level}]: ${message}${metaStr}${stack ? '\n' + stack : ''}`;
     })
   ),
   transports

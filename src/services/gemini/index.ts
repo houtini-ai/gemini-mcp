@@ -226,6 +226,10 @@ export class GeminiService extends BaseService {
     return this.defaultModel;
   }
 
+  getDeepResearchModel(): string {
+    return this.config.defaultDeepResearchModel || this.defaultModel;
+  }
+
   private addInlineCitations(text: string, groundingMetadata: any): string {
     // Use correct field names (typos were fixed in recent SDK versions)
     const supports = groundingMetadata.groundingSupports || [];

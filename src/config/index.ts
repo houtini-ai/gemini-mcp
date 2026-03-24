@@ -24,9 +24,10 @@ export const config: Config = {
         threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       }
     ],
-    defaultModel: 'gemini-3.1-pro-preview',               // chat / text
+    defaultModel: 'gemini-3.1-pro-preview',                // chat / text
+    defaultDeepResearchModel: 'gemini-3-flash-preview',  // deep_research (flash for speed)
     defaultImageAnalysisModel: 'gemini-3.1-pro-preview', // analyze_image
-    defaultImageDescribeModel: 'gemini-3.1-pro-preview', // describe_image
+    defaultImageDescribeModel: 'gemini-3-flash-preview', // describe_image (lighter task)
     defaultImageGenerationModel: 'gemini-3-pro-image-preview', // generate_image / edit_image
     maxTokens: 65536,
     temperature: 1.0,
@@ -35,7 +36,7 @@ export const config: Config = {
   },
   server: {
     name: 'gemini-mcp',
-    version: '2.2.0',
+    version: '2.2.4',
     imageOutputDir: process.env.GEMINI_IMAGE_OUTPUT_DIR
   },
   logging: {

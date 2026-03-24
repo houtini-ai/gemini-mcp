@@ -15,8 +15,9 @@ const app = new App({ name: 'Gemini Image Viewer', version: '1.0.0' });
 
 app.ontoolresult = (result: { structuredContent?: ImageResult }) => {
   const data = result.structuredContent;
-  if (!data || (!data.imageUrl && !data.base64Data)) return;
-  render(data);
+  if (!data) return;
+  // Render if we have any image source (URL, base64, or file path)
+  if (data.imageUrl || data.base64Data || data.savedPath) render(data);
 };
 
 app.connect();
@@ -37,11 +38,16 @@ function render(data: ImageResult) {
   const zoomLevelEl = document.getElementById('zoom-level')!;
   const imageDimsEl = document.getElementById('image-dims')!;
 
-  // Prefer media server URL (full-res, bypasses MCP limits) over inline base64
+  // Prefer media server URL (full-res, bypasses MCP limits) over inline base64.
+  // base64Data is intentionally kept empty to avoid exceeding the 1MB MCP transport limit.
   if (data.imageUrl) {
     img.src = data.imageUrl;
   } else if (data.base64Data && data.mimeType) {
     img.src = `data:${data.mimeType};base64,${data.base64Data}`;
+  } else if (data.savedPath) {
+    // Last resort: convert file path to file:// URI for local viewing
+    const fileUrl = 'file:///' + data.savedPath.replace(/\\/g, '/');
+    img.src = fileUrl;
   }
 
   // Show dimensions once loaded

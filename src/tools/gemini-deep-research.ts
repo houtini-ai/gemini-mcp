@@ -22,8 +22,8 @@ export class GeminiDeepResearchTool {
       });
 
       const researchQuestion = args.research_question;
-      const maxIterations = Math.min(args.max_iterations || 5, 10);
-      const model = args.model || this.geminiService.getDefaultModel();
+      const maxIterations = Math.min(args.max_iterations || 1, 10);
+      const model = args.model || this.geminiService.getDeepResearchModel();
       const focusAreas: string[] = args.focus_areas || [];
 
       const modelContextWindow = this.geminiService.getModelContextWindow(model);
