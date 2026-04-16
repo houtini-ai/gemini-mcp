@@ -138,16 +138,17 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
+// Keep the server alive across tool-level errors. A single bad tool input
+// (e.g. Gemini API rejecting MEDIA_RESOLUTION_ULTRA_HIGH on a non-image op)
+// used to trigger process.exit(1) via these handlers, killing stdio and
+// forcing a full Claude Code restart. Log and continue instead — the MCP
+// protocol's per-request error responses handle recoverable failures cleanly.
 process.on('uncaughtException', (error) => {
-  logger.error('Uncaught exception', { error });
-  serverInstance?.shutdown();
-  process.exit(1);
+  logger.error('Uncaught exception (server continuing)', { error });
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled promise rejection', { reason, promise });
-  serverInstance?.shutdown();
-  process.exit(1);
+  logger.error('Unhandled promise rejection (server continuing)', { reason, promise });
 });
 
 async function main() {
