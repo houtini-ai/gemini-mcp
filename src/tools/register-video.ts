@@ -30,7 +30,7 @@ export function register(ctx: ToolContext): void {
           .describe('Video aspect ratio: 16:9 (landscape) or 9:16 (portrait/vertical)'),
         resolution: z.enum(['720p', '1080p', '4k']).optional().default('1080p')
           .describe('Video resolution. Higher resolutions take longer to generate and result in larger files.'),
-        durationSeconds: z.union([z.literal(4), z.literal(6), z.literal(8)]).optional().default(8)
+        durationSeconds: z.number().min(4).max(8).optional().default(8)
           .describe('Video duration in seconds (4, 6, or 8 seconds)'),
         generateAudio: z.boolean().optional().default(true)
           .describe('Generate native synchronized audio effects and dialogue based on the prompt'),
