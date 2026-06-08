@@ -19,7 +19,8 @@ export function register(ctx: ToolContext): void {
       description:
         'Generate a complete, self-contained HTML landing page using Gemini. ' +
         'Returns inline preview with responsive viewport controls. ' +
-        'No external dependencies; inline CSS and vanilla JS only.',
+        'No external dependencies; inline CSS and vanilla JS only. ' +
+        '[MCP_RECOMMENDED_TIMEOUT_MS: 300000]',
       inputSchema: {
         brief: z.string().describe('Description of the product/service and page goals'),
         companyName: z.string().optional().describe('Company or product name'),
@@ -31,7 +32,10 @@ export function register(ctx: ToolContext): void {
         sections: z.array(z.string())
           .optional()
           .describe('Sections to include (e.g. ["hero", "features", "pricing", "cta"])'),
-        model: z.string().optional().describe('Gemini model to use (defaults to configured default)'),
+        model: z.string().optional().describe(
+          'Omit to use gemini-3.1-pro-preview. ' +
+          'Other valid options: gemini-3-pro-preview, gemini-3-flash-preview.'
+        ),
         outputPath: z.string()
           .optional()
           .describe('Optional file path to save the HTML (e.g. C:/dev/output/landing.html)'),

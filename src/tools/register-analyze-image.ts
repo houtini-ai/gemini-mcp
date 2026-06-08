@@ -14,7 +14,7 @@ export function register(ctx: ToolContext): void {
       description:
         'Analyze and extract information from one or more images using Gemini multimodal understanding. ' +
         'Returns a text analysis — no image is generated. ' +
-        'Default model: gemini-3-pro-preview.',
+        'Default model: gemini-3-pro-preview. [MCP_RECOMMENDED_TIMEOUT_MS: 300000]',
       inputSchema: {
         images: z.array(imageInputSchema)
           .min(1)
@@ -23,14 +23,22 @@ export function register(ctx: ToolContext): void {
           .describe('What to analyze or extract from the image(s)'),
         model: z.string()
           .optional()
-          .describe('Model to use (default: gemini-3-pro-preview)'),
+          .describe(
+            'Omit to use gemini-3-pro-preview. ' +
+            'Other valid options: gemini-3.1-pro-preview, gemini-3-flash-preview. ' +
+            'Do NOT pass gemini-1.5-* or gemini-pro-vision — those are out of support.'
+          ),
         max_tokens: z.number()
           .int()
           .min(1)
           .max(65536)
           .optional()
           .default(16384)
-          .describe('Maximum tokens in response (default 16384, up to 64K output limit)'),
+          .describe(
+            'Output token budget INCLUDING Gemini 3 thinking tokens. ' +
+            'Leave unset — the default 16384 is fine for almost every analysis. ' +
+            'Setting this below ~8000 risks an empty response when thinking is active.'
+          ),
         global_media_resolution: z.enum([
           'MEDIA_RESOLUTION_LOW',
           'MEDIA_RESOLUTION_MEDIUM',

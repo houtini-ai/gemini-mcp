@@ -9,25 +9,36 @@ export function register(ctx: ToolContext): void {
     'gemini_chat',
     {
       title: 'Gemini Chat',
-      description: 'Chat with Google Gemini models',
+      description:
+        'Chat with Google Gemini models. Default model: gemini-3.1-pro-preview. ' +
+        '[MCP_RECOMMENDED_TIMEOUT_MS: 300000]',
       inputSchema: {
         message: z.string().describe('The message to send'),
         model: z.string()
           .optional()
-          .describe('Model to use (defaults to latest available)'),
+          .describe(
+            'Omit to use the configured default (gemini-3.1-pro-preview). ' +
+            'Other valid options: gemini-3-pro-preview, gemini-3-flash-preview. ' +
+            'Do NOT pass gemini-1.5-* or gemini-pro — those are out of support.'
+          ),
         temperature: z.number()
           .min(0.0)
           .max(1.0)
           .optional()
           .default(0.7)
-          .describe('Controls randomness (0.0 to 1.0)'),
+          .describe('Controls randomness (0.0 to 1.0). Ignored on Gemini 3+ (forced to 1.0 per Google docs).'),
         max_tokens: z.number()
           .int()
           .min(1)
           .max(65536)
           .optional()
           .default(65536)
-          .describe('Maximum tokens in response'),
+          .describe(
+            'Output token budget INCLUDING Gemini 3 thinking tokens. ' +
+            'Leave unset — the default 65536 is correct for almost every call. ' +
+            'Setting this below ~8000 with thinking_level=high will return an empty response ' +
+            '(thinking consumes the whole budget, finishReason=MAX_TOKENS).'
+          ),
         system_prompt: z.string()
           .optional()
           .describe('Optional system instruction'),

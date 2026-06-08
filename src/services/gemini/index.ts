@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, Part } from '@google/generative-ai';
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold, type Part, type Content } from '@google/genai';
 import { BaseService } from '../base-service.js';
 import { GeminiConfig } from '../../config/types.js';
 import { 
@@ -26,8 +26,26 @@ function isGemini3(modelName: string): boolean {
   return GEMINI3_MODEL_PREFIXES.some(prefix => modelName.startsWith(prefix));
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let handle: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    handle = setTimeout(
+      () => reject(new GeminiError(
+        `${label} exceeded ${Math.round(timeoutMs / 1000)}s timeout. ` +
+        `Increase GEMINI_REQUEST_TIMEOUT_MS or lower thinking_level/max_tokens.`
+      )),
+      timeoutMs
+    );
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (handle) clearTimeout(handle);
+  }
+}
+
 export class GeminiService extends BaseService {
-  private genAI: GoogleGenerativeAI;
+  private genAI: GoogleGenAI;
   private config: GeminiConfig;
   private availableModels: ModelInfo[] = [];
   private defaultModel: string;
@@ -43,7 +61,7 @@ export class GeminiService extends BaseService {
       throw new GeminiError('Missing API key for Gemini service');
     }
     
-    this.genAI = new GoogleGenerativeAI(config.apiKey);
+    this.genAI = new GoogleGenAI({ apiKey: config.apiKey });
     this.defaultModel = config.defaultModel;
     this.availableModels = this.getFallbackModels();
     this.videoService = new GeminiVideoService(config, outputDir);
@@ -316,60 +334,53 @@ export class GeminiService extends BaseService {
       // Values below 1.0 can cause looping or degraded reasoning.
       const temperature = gemini3 ? 1.0 : (request.temperature ?? this.config.temperature);
 
-      const generationConfig: GeminiGenerationConfig & { thinkingConfig?: { thinkingLevel: string } } = {
+      const config: any = {
         temperature,
         maxOutputTokens: request.maxTokens ?? this.config.maxTokens,
+        safetySettings: this.mapSafetySettings(),
       };
 
       if (gemini3 && request.thinkingLevel) {
-        generationConfig.thinkingConfig = { thinkingLevel: request.thinkingLevel };
+        config.thinkingConfig = { thinkingLevel: request.thinkingLevel.toUpperCase() };
       }
-
-      const modelConfig: any = {
-        model: modelName,
-        safetySettings: this.mapSafetySettings(),
-        generationConfig,
-      };
 
       if (shouldUseGrounding) {
-        modelConfig.tools = [{ googleSearch: {} }];
+        config.tools = [{ googleSearch: {} }];
       }
 
-      const model = this.genAI.getGenerativeModel(modelConfig);
+      if (request.systemPrompt) {
+        config.systemInstruction = request.systemPrompt;
+      }
 
-      const prompt = request.systemPrompt
-        ? `${request.systemPrompt}\n\nUser: ${request.message}\n\nAssistant:`
-        : request.message;
+      const response = await withTimeout(
+        this.genAI.models.generateContent({
+          model: modelName,
+          contents: request.message,
+          config,
+        }),
+        this.config.requestTimeoutMs,
+        `gemini_chat (${modelName})`
+      );
 
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-
-      if (result.response.promptFeedback?.blockReason) {
+      if (response.promptFeedback?.blockReason) {
         throw new GeminiError(
-          `Response was blocked by safety filters. Reason: ${result.response.promptFeedback.blockReason}. ` +
+          `Response was blocked by safety filters. Reason: ${response.promptFeedback.blockReason}. ` +
           'Try rephrasing your query or using different parameters.'
         );
       }
 
-      let responseText: string;
+      const responseText = response.text ?? '';
 
-      try {
-        responseText = response.text();
-      } catch {
+      if (!responseText) {
         const candidate = response.candidates?.[0];
-        if (candidate?.finishReason) {
-          const finishReasonMap: Record<string, string> = {
-            '1': 'STOP - Natural ending',
-            '2': 'SAFETY - Content was filtered',
-            '3': 'MAX_TOKENS - Hit token limit',
-            '4': 'UNSPECIFIED',
-            '5': 'OTHER',
-          };
-          const reason = finishReasonMap[candidate.finishReason.toString()] ||
-            `Unknown reason: ${candidate.finishReason}`;
+        const finishReason = candidate?.finishReason;
+        if (finishReason && finishReason !== 'STOP') {
           throw new GeminiError(
-            `Response was filtered. Finish reason: ${reason}\n\n` +
-            'Try:\n1. Rephrasing your query\n2. Using a different model\n3. Adjusting temperature settings'
+            `Empty response. Finish reason: ${finishReason}\n\n` +
+            (finishReason === 'MAX_TOKENS'
+              ? 'Output budget was exhausted (thinking tokens count against max_tokens on Gemini 3). ' +
+                'Raise max_tokens or lower thinking_level.'
+              : 'Try:\n1. Rephrasing your query\n2. Using a different model\n3. Adjusting temperature settings')
           );
         }
         throw new GeminiError('No text content in response. The model may have filtered the content.');
@@ -405,8 +416,8 @@ export class GeminiService extends BaseService {
         model: modelName,
         timestamp: new Date().toISOString(),
         finishReason: response.candidates?.[0]?.finishReason?.toString(),
-        groundingMetadata,
-        usageMetadata,
+        groundingMetadata: groundingMetadata as any,
+        usageMetadata: usageMetadata as any,
       };
 
       this.logInfo('Chat response generated successfully', {
@@ -505,19 +516,14 @@ export class GeminiService extends BaseService {
         globalMediaResolution: request.globalMediaResolution
       });
 
-      const generationConfig: any = {
+      const config: any = {
         temperature: request.temperature ?? this.config.temperature,
         maxOutputTokens: request.maxTokens ?? 16384,
+        safetySettings: this.mapSafetySettings(),
         ...(request.globalMediaResolution && {
           mediaResolution: request.globalMediaResolution
         })
       };
-
-      const model = this.genAI.getGenerativeModel({
-        model: modelName,
-        safetySettings: this.mapSafetySettings(),
-        generationConfig
-      });
 
       const parts: Part[] = request.images.map(img => {
         const part: any = {
@@ -526,25 +532,43 @@ export class GeminiService extends BaseService {
             mimeType: img.mimeType
           }
         };
-        
-        // Add per-image media resolution if specified
+
         if (img.mediaResolution) {
           part.mediaResolution = img.mediaResolution;
         }
-        
+
         return part;
       });
 
       parts.push({ text: prompt });
 
-      const result = await model.generateContent({ contents: [{ role: 'user', parts }] });
-      const response = result.response;
+      const contents: Content[] = [{ role: 'user', parts }];
+
+      const response = await withTimeout(
+        this.genAI.models.generateContent({
+          model: modelName,
+          contents,
+          config,
+        }),
+        this.config.requestTimeoutMs,
+        `analyze_image (${modelName})`
+      );
 
       if (response.promptFeedback?.blockReason) {
         throw new GeminiError(`Response blocked: ${response.promptFeedback.blockReason}`);
       }
 
-      const text = response.text();
+      const text = response.text ?? '';
+
+      if (!text) {
+        const finishReason = response.candidates?.[0]?.finishReason;
+        throw new GeminiError(
+          `Empty image-analysis response. Finish reason: ${finishReason ?? 'unknown'}. ` +
+          (finishReason === 'MAX_TOKENS'
+            ? 'Raise max_tokens — thinking tokens count against the budget on Gemini 3.'
+            : 'Try a different prompt or model.')
+        );
+      }
 
       this.logInfo('analyzeImages completed', {
         model: modelName,

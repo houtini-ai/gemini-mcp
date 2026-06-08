@@ -19,7 +19,7 @@ export function register(ctx: ToolContext): void {
       description:
         'Generate scalable vector graphics (SVG) using Gemini. ' +
         'Creates clean, production-ready SVG code for diagrams, illustrations, icons, and data visualizations. ' +
-        'Returns inline preview with SVG viewer.',
+        'Returns inline preview with SVG viewer. [MCP_RECOMMENDED_TIMEOUT_MS: 240000]',
       inputSchema: {
         prompt: z.string().describe('Description of the SVG graphic to generate'),
         width: z.number()
@@ -36,7 +36,10 @@ export function register(ctx: ToolContext): void {
           .describe('Visual style: technical (diagrams), artistic (illustrations), minimal (simple), data-viz (charts)'),
         model: z.string()
           .optional()
-          .describe('Gemini model to use (defaults to configured default)'),
+          .describe(
+            'Omit to use gemini-3.1-pro-preview. ' +
+            'Other valid options: gemini-3-pro-preview, gemini-3-flash-preview.'
+          ),
         outputPath: z.string()
           .optional()
           .describe('Optional file path to save the SVG (e.g. C:/output/diagram.svg)'),

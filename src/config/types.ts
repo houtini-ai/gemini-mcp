@@ -10,7 +10,7 @@ export interface GeminiConfig {
   safetySettings: SafetySetting[];
   // Task-specific default models
   defaultModel: string;                // chat / text generation
-  defaultDeepResearchModel: string;    // deep_research (flash for speed, avoids MCP timeout)
+  defaultDeepResearchModel: string;    // deep_research
   defaultImageAnalysisModel: string;   // analyze_image (multimodal reasoning)
   defaultImageDescribeModel: string;   // describe_image (lighter vision task)
   defaultImageGenerationModel: string; // generate_image / edit_image
@@ -18,6 +18,7 @@ export interface GeminiConfig {
   temperature: number;
   defaultGrounding: boolean;
   allowExperimentalModels?: boolean;
+  requestTimeoutMs: number;
 }
 
 export interface ServerConfig {

@@ -1,7 +1,17 @@
-import { GroundingMetadata } from '@google/generative-ai';
-
 // Gemini API requires UPPERCASE enum values for thinkingConfig.thinkingLevel
 export type ThinkingLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'MINIMAL';
+
+// Minimal local shape — the SDK type used to come from @google/generative-ai.
+// We only need the fields that addInlineCitations reads.
+export interface GroundingMetadata {
+  webSearchQueries?: string[];
+  groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>;
+  groundingSupports?: Array<{
+    groundingChunkIndices?: number[];
+    segment?: { startIndex?: number; endIndex?: number; text?: string };
+  }>;
+  [key: string]: any;
+}
 
 export interface ChatRequest {
   message: string;
