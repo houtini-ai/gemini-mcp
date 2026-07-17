@@ -36,8 +36,8 @@ export function register(ctx: ToolContext): void {
           .describe(
             'Output token budget INCLUDING Gemini 3 thinking tokens. ' +
             'Leave unset — the default 65536 is correct for almost every call. ' +
-            'Setting this below ~8000 with thinking_level=high will return an empty response ' +
-            '(thinking consumes the whole budget, finishReason=MAX_TOKENS).'
+            'Values below 4096 are IGNORED and the default applies: thinking consumes ' +
+            'the whole budget and returns an empty response (finishReason=MAX_TOKENS).'
           ),
         system_prompt: z.string()
           .optional()
@@ -68,11 +68,16 @@ export function register(ctx: ToolContext): void {
           messageLength: message.length
         });
 
+        // Floor tiny caller budgets — MCP clients habitually pass caps like 256
+        // that thinking burns entirely, returning empty output. Below 4096 the
+        // default budget applies instead.
+        const effectiveMaxTokens = max_tokens !== undefined && max_tokens < 4096 ? 65536 : max_tokens;
+
         const response = await ctx.geminiService.chat({
           message,
           model,
           temperature,
-          maxTokens: max_tokens,
+          maxTokens: effectiveMaxTokens,
           systemPrompt: system_prompt,
           grounding,
           thinkingLevel: thinking_level as any,

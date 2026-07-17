@@ -37,7 +37,8 @@ export function register(ctx: ToolContext): void {
           .describe(
             'Output token budget INCLUDING Gemini 3 thinking tokens. ' +
             'Leave unset — the default 16384 is fine for almost every analysis. ' +
-            'Setting this below ~8000 risks an empty response when thinking is active.'
+            'Values below 4096 are IGNORED and the default applies (tiny caps return ' +
+            'an empty response when thinking is active).'
           ),
         global_media_resolution: z.enum([
           'MEDIA_RESOLUTION_LOW',
@@ -67,7 +68,8 @@ export function register(ctx: ToolContext): void {
           images: resolved as any,
           prompt,
           model: model || 'gemini-3-pro-preview',
-          maxTokens: max_tokens,
+          // Floor tiny caller budgets (see register-chat) — below 4096 the default applies.
+          maxTokens: max_tokens !== undefined && max_tokens < 4096 ? 16384 : max_tokens,
           globalMediaResolution: global_media_resolution
         });
 
