@@ -337,6 +337,8 @@ Gemini returns 2-5MB images. The resize is smart — it measures the non-image o
 
 **Gemini 3 notes:** Temperature is forced to 1.0 on Gemini 3 models (Google's requirement — lower values cause looping). Thinking level only applies to `gemini_chat`.
 
+**Token budgets:** `max_tokens` defaults to each model's full output ceiling as reported live by the models API (65,536 on current Gemini 3 text models — the 1M figure is input context). It's a cap, not consumption: unused headroom costs nothing. Values below 4,096 are ignored (Gemini 3 thinking burns tiny budgets before any visible output, which looks like a timeout) and values above the model's real limit are clamped.
+
 ---
 
 ## Requirements
