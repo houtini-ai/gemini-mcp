@@ -121,3 +121,6 @@ commit-msg.txt
 test-output/
 test-outputs/
 output/
+
+# Claude Code local state
+.claude/
