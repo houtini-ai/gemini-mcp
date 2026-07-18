@@ -90,6 +90,7 @@ export function register(ctx: ToolContext): void {
           ? error.message
           : `Failed to generate SVG: ${(error as Error).message}`;
         return {
+          isError: true,
           content: createToolResult(false, msg, error as Error),
           structuredContent: { content: msg, success: false },
         };

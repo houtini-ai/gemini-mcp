@@ -272,20 +272,21 @@ Create a synthesis that:
 
     } catch (error) {
       logger.error('Deep research failed', { error });
-      
+
+      // Rethrow so the tool registration's catch reports a real MCP error —
+      // returning an error string as ordinary content made clients see
+      // success:true with a "report" that was actually a failure message.
       if (error instanceof McpError) {
-        return createToolResult(false, error.message, error);
+        throw error;
       }
-      
+
       const errorMessage = (error as Error).message || 'Unknown error';
-      return createToolResult(
-        false, 
+      throw new Error(
         `Deep research failed: ${errorMessage}\n\n` +
         `Try:\n` +
         `- Simplifying or rephrasing the question\n` +
         `- Reducing max_iterations\n` +
-        `- Breaking it into smaller, more focused queries`, 
-        error as Error
+        `- Breaking it into smaller, more focused queries`
       );
     }
   }

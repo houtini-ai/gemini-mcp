@@ -21,6 +21,9 @@ export function toolError(toolName: string, error: unknown) {
     : `${toolName} failed: ${(error as Error).message}`;
 
   return {
+    // Spec-compliant failure marker — clients branch on isError, not on the
+    // "Error:" prefix inside the text block.
+    isError: true,
     content: createToolResult(false, msg, error as Error),
     structuredContent: { content: msg, success: false },
   };

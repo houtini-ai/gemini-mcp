@@ -47,8 +47,8 @@ body {
 #content {
   display: none;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  height: auto;
+  overflow: visible;
 }
 
 .toolbar {
@@ -107,19 +107,17 @@ button.copied { background: #10b981; }
 
 .preview-container {
   flex: 1;
-  overflow: auto;
+  overflow: visible;
   background: var(--viewport-bg);
   position: relative;
-  min-height: 0; /* allow flex child to shrink and scroll */
 }
 
 iframe {
   width: 100%;
   border: none;
   display: block;
-  /* Start tall so landing page content is visible immediately;
-     JS will auto-resize to exact content height after load. */
-  min-height: 100%;
+  /* Height is set dynamically by resizeIframe() after content loads */
+  min-height: 400px;
 }
 
 .resize-buttons {

@@ -3,7 +3,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import { config, validateConfig } from './config/index.js';
 import { GeminiService } from './services/gemini/index.js';
@@ -157,10 +157,17 @@ async function main() {
   await serverInstance.start();
 }
 
-main().catch(error => {
-  logger.error('Server startup failed', { error });
-  serverInstance?.shutdown();
-  process.exit(1);
-});
+// Only auto-start when this file IS the entry point (node dist/index.js).
+// The npm bin (dist/cli.js) imports this module and starts its own server —
+// an unguarded top-level main() here gave every npx user two servers racing
+// on the same stdin/stdout. Case-insensitive compare for Windows drive letters.
+const entryHref = process.argv[1] ? pathToFileURL(process.argv[1]).href.toLowerCase() : '';
+if (entryHref === import.meta.url.toLowerCase()) {
+  main().catch(error => {
+    logger.error('Server startup failed', { error });
+    serverInstance?.shutdown();
+    process.exit(1);
+  });
+}
 
 export { GeminiMcpServer };

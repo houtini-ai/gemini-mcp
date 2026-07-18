@@ -107,11 +107,14 @@ export class GeminiService extends BaseService {
 
   private async fetchModelsFromAPI(): Promise<ModelInfo[]> {
     try {
-      const apiKey = this.config.apiKey;
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+        'https://generativelanguage.googleapis.com/v1beta/models',
+        {
+          headers: { 'x-goog-api-key': this.config.apiKey },
+          signal: AbortSignal.timeout(15_000),
+        }
       );
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch models: ${response.statusText}`);
       }
@@ -462,10 +465,12 @@ export class GeminiService extends BaseService {
       }
 
       // Test API access by listing models (much faster than generateContent)
-      const apiKey = this.config.apiKey;
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
-        { signal: AbortSignal.timeout(5000) }
+        'https://generativelanguage.googleapis.com/v1beta/models',
+        {
+          headers: { 'x-goog-api-key': this.config.apiKey },
+          signal: AbortSignal.timeout(5000),
+        }
       );
       
       if (!response.ok) {

@@ -216,7 +216,7 @@ export function register(ctx: ToolContext): void {
         const msg = error instanceof McpError
           ? error.message
           : `Failed to generate image: ${(error as Error).message}`;
-        return { content: createToolResult(false, msg, error as Error) };
+        return { isError: true, content: createToolResult(false, msg, error as Error) };
       }
     }
   );
@@ -305,7 +305,7 @@ export function register(ctx: ToolContext): void {
         const msg = error instanceof McpError
           ? error.message
           : `Failed to edit image: ${(error as Error).message}`;
-        return { content: createToolResult(false, msg, error as Error) };
+        return { isError: true, content: createToolResult(false, msg, error as Error) };
       }
     }
   );

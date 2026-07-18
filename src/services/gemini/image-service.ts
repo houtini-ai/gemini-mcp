@@ -5,6 +5,9 @@ import { GeneratedImageResult, ImageResponsePart } from './types.js';
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
+/** Image generation with reference images can legitimately take minutes. */
+const IMAGE_REQUEST_TIMEOUT_MS = 300_000;
+
 export const IMAGE_GENERATION_MODELS = [
   'gemini-3-pro-image-preview',  // Nano Banana Pro — Gemini 3 image model, default for generation
   'gemini-2.5-flash-image',      // Gemini 2.5 Flash image generation (stable alias)
@@ -230,11 +233,14 @@ export class GeminiImageService extends BaseService {
       globalMediaResolution: options.globalMediaResolution
     });
 
-    const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${this.apiKey}`;
+    // Key in header (not ?key= query param — avoids intermediary URL logging);
+    // AbortSignal so a stalled response can't hang the tool call forever.
+    const url = `${GEMINI_API_BASE}/${model}:generateContent`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(IMAGE_REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -349,11 +355,14 @@ export class GeminiImageService extends BaseService {
       globalMediaResolution: options.globalMediaResolution
     });
 
-    const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${this.apiKey}`;
+    // Key in header (not ?key= query param — avoids intermediary URL logging);
+    // AbortSignal so a stalled response can't hang the tool call forever.
+    const url = `${GEMINI_API_BASE}/${model}:generateContent`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(IMAGE_REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {

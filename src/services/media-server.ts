@@ -1,8 +1,18 @@
 import { createServer, type IncomingMessage, type ServerResponse, type Server } from 'http';
 import { stat, createReadStream } from 'fs';
-import { resolve, normalize, extname } from 'path';
+import { resolve, normalize, extname, relative, isAbsolute } from 'path';
 import { randomBytes } from 'crypto';
 import logger from '../utils/logger.js';
+
+/**
+ * True when `child` is `parent` or inside it. A bare startsWith() is not a
+ * containment check — C:\media-secrets starts with C:\media. Lower-cased for
+ * Windows drive/dir case-insensitivity.
+ */
+function isContained(parent: string, child: string): boolean {
+  const rel = relative(normalize(parent).toLowerCase(), normalize(child).toLowerCase());
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
 
 const MIME_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
@@ -82,8 +92,7 @@ export class MediaServer {
     const normalResolved = normalize(resolved);
 
     // Ensure the file is within the allowed directory
-    // Use toLowerCase() to handle Windows drive letter casing (D:\ vs d:\)
-    if (!normalResolved.toLowerCase().startsWith(normalAllowed.toLowerCase())) {
+    if (!isContained(normalAllowed, normalResolved)) {
       logger.warn('Media server: path outside allowed directory', {
         path: absPath,
         allowedDir: this.allowedDir,
@@ -151,7 +160,7 @@ export class MediaServer {
     const normalFile = normalize(filePath);
 
     // Path traversal protection
-    if (!normalFile.toLowerCase().startsWith(normalAllowed.toLowerCase())) {
+    if (!isContained(normalAllowed, normalFile)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('Forbidden');
       return;
@@ -207,7 +216,7 @@ export class MediaServer {
           return;
         }
 
-        createReadStream(filePath, { start, end }).pipe(res);
+        this.pipeFile(filePath, res, { start, end });
       } else {
         res.writeHead(200, {
           'Content-Length': fileSize,
@@ -219,8 +228,24 @@ export class MediaServer {
           return;
         }
 
-        createReadStream(filePath).pipe(res);
+        this.pipeFile(filePath, res);
       }
     });
+  }
+
+  /**
+   * Stream a file to the response with an error handler — an unhandled
+   * 'error' on the read stream (file deleted/locked between stat and open)
+   * becomes an uncaughtException and kills the whole server process.
+   */
+  private pipeFile(filePath: string, res: ServerResponse, range?: { start: number; end: number }): void {
+    const stream = range ? createReadStream(filePath, range) : createReadStream(filePath);
+    stream.on('error', (err) => {
+      logger.warn('Media server: read stream error', { filePath, error: err.message });
+      res.destroy();
+    });
+    stream.pipe(res);
+    // If the client disconnects mid-stream, release the file handle.
+    res.on('close', () => stream.destroy());
   }
 }

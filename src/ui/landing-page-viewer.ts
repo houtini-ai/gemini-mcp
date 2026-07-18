@@ -49,13 +49,16 @@ function render(data: LandingPageResult) {
         const height = Math.max(
           doc.body.scrollHeight,
           doc.documentElement?.scrollHeight || 0,
-          600 // minimum height
+          400
         );
         iframe.style.height = height + 'px';
+        // Drive document.body height so ResizeObserver notifies the host
+        const toolbarHeight = document.querySelector('.toolbar')?.getBoundingClientRect().height || 48;
+        document.body.style.minHeight = (height + toolbarHeight + 8) + 'px';
       }
     } catch {
-      // cross-origin fallback — just use a tall default
       iframe.style.height = '3000px';
+      document.body.style.minHeight = '3008px';
     }
   }
 

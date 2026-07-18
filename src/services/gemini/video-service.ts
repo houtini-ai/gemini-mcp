@@ -126,6 +126,10 @@ interface VeoOperationResponse {
 const MAX_429_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 30_000; // 30 seconds
 
+/** Per-HTTP-request cap (submit/poll/download) — the long-running generation
+ * itself is asynchronous server-side, so no single request should take this long. */
+const HTTP_REQUEST_TIMEOUT_MS = 120_000;
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export class GeminiVideoService extends BaseService {
@@ -169,11 +173,18 @@ export class GeminiVideoService extends BaseService {
     let lastError: Error | undefined;
 
     for (let attempt = 0; attempt <= MAX_429_RETRIES; attempt++) {
-      const response = await fetch(url, init);
+      const response = await fetch(url, {
+        ...init,
+        // A stalled connection must not hang the tool call indefinitely.
+        signal: init?.signal ?? AbortSignal.timeout(HTTP_REQUEST_TIMEOUT_MS),
+      });
 
       if (response.status !== 429) {
         return response;
       }
+
+      // Drain the 429 body so the keep-alive socket is released before retrying.
+      await response.body?.cancel().catch(() => {});
 
       // 429 rate limited
       lastError = new GeminiError(
@@ -269,14 +280,18 @@ export class GeminiVideoService extends BaseService {
         opPath = opPath.replace('models/', '');
       }
 
-      const url = `${GEMINI_API_BASE}/${opPath}?key=${this.apiKey}`;
-      
+      const url = `${GEMINI_API_BASE}/${opPath}`;
+
       this.logInfo(`Polling video operation (attempt ${attempts})`, {
         elapsed: `${Math.round((Date.now() - startTime) / 1000)}s`,
         maxTime: `${this.maxPollingTimeMs / 1000}s`
       });
 
-      const response = await this.fetchWithRetry(url, undefined, 'poll operation');
+      const response = await this.fetchWithRetry(
+        url,
+        { headers: { 'x-goog-api-key': this.apiKey } },
+        'poll operation'
+      );
 
       if (!response.ok) {
         const text = await response.text();
@@ -341,7 +356,11 @@ export class GeminiVideoService extends BaseService {
       ? path.basename(customPath)
       : `veo-video-${Date.now()}.${ext}`;
     
-    const fullPath = customPath || path.join(this.outputDir, filename);
+    // Resolve custom paths (a relative one would land in the MCP host's
+    // arbitrary cwd) and create their directory — losing a finished 2-5 min
+    // generation to ENOENT is the worst possible time to fail.
+    const fullPath = customPath ? path.resolve(customPath) : path.join(this.outputDir, filename);
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
 
     // Write buffer to file
     await fs.writeFile(fullPath, buffer);
@@ -370,7 +389,9 @@ export class GeminiVideoService extends BaseService {
       ? path.basename(customPath)
       : `veo-video-${Date.now()}.${ext}`;
     
-    const fullPath = customPath || path.join(this.outputDir, filename);
+    // Same custom-path handling as downloadVideoFromUri above.
+    const fullPath = customPath ? path.resolve(customPath) : path.join(this.outputDir, filename);
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
 
     // Convert base64 to buffer and write to file
     const buffer = Buffer.from(base64Data, 'base64');
@@ -402,11 +423,11 @@ export class GeminiVideoService extends BaseService {
     const requestBody = this.buildVeoRequest(options);
 
     // Submit async job
-    const submitUrl = `${GEMINI_API_BASE}/${model}:predictLongRunning?key=${this.apiKey}`;
-    
+    const submitUrl = `${GEMINI_API_BASE}/${model}:predictLongRunning`;
+
     const submitResponse = await this.fetchWithRetry(submitUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
       body: JSON.stringify(requestBody)
     }, 'submit video');
 

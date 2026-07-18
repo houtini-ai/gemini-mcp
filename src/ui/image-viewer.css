@@ -40,7 +40,7 @@ body {
   text-align: center;
 }
 
-#content { display: none; width: 100%; max-width: 900px; }
+#content { display: none; width: 100%; max-width: 900px; min-height: 500px; }
 
 .image-wrap {
   width: 100%;
