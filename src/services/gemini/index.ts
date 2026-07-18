@@ -213,6 +213,10 @@ export class GeminiService extends BaseService {
     return match ? parseFloat(match[1]) : 0;
   }
 
+  // Used only when live model discovery fails. The limits below are the
+  // API-prescribed values (models endpoint, checked 2026-07): these models
+  // report inputTokenLimit 1,048,576 and outputTokenLimit 65,536 — not
+  // invented numbers. Live discovery always overrides this list.
   private getFallbackModels(): ModelInfo[] {
     return [
       // Gemini 3.1 family (newest)
@@ -220,26 +224,30 @@ export class GeminiService extends BaseService {
         name: 'gemini-3.1-pro-preview',
         displayName: 'Gemini 3.1 Pro Preview',
         description: 'Gemini 3.1 Pro — adaptive thinking, 1M context, agentic workflows (Feb 2026)',
-        contextWindow: 1_000_000
+        contextWindow: 1_048_576,
+        outputTokenLimit: 65_536
       },
       {
         name: 'gemini-3.1-pro-preview-customtools',
         displayName: 'Gemini 3.1 Pro Preview (Custom Tools)',
         description: 'Gemini 3.1 Pro optimised for custom tool usage',
-        contextWindow: 1_000_000
+        contextWindow: 1_048_576,
+        outputTokenLimit: 65_536
       },
       // Gemini 3 family
       {
         name: 'gemini-3-pro-preview',
         displayName: 'Gemini 3 Pro Preview',
         description: 'Gemini 3 Pro — advanced reasoning, 1M context',
-        contextWindow: 1_000_000
+        contextWindow: 1_048_576,
+        outputTokenLimit: 65_536
       },
       {
         name: 'gemini-3-flash-preview',
         displayName: 'Gemini 3 Flash Preview',
         description: 'Gemini 3 Flash — frontier multimodal at Flash speed',
-        contextWindow: 1_000_000
+        contextWindow: 1_048_576,
+        outputTokenLimit: 65_536
       },
     ];
   }
