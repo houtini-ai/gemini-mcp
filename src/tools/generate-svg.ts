@@ -90,7 +90,8 @@ Remember: Elegant simplicity beats complex over-engineering. Fewer elements, cle
         message: prompt,
         systemPrompt: SYSTEM_PROMPT,
         model: request.model || 'gemini-3-flash-preview',
-        maxTokens: 8192,
+        // No maxTokens: inherit the model's full output headroom — a cap costs
+        // nothing unused, and 8192 was starved by Gemini 3 thinking.
         grounding: false,
       });
       response = result.content;

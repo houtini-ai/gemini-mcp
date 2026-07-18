@@ -221,8 +221,9 @@ Options: See \`gemini_help topic="models"\`
 Enable Google Search grounding for current information
 Returns grounding metadata with sources
 
-**max_tokens** (optional, default: 65536)
-Maximum tokens in response (1-65536)
+**max_tokens** (optional, default: the model's full output ceiling)
+Output cap including thinking tokens — omit it; unused headroom costs nothing.
+Values below 4096 are ignored; values above the model's limit are clamped.
 
 **temperature** (optional, default: 0.7)
 Randomness (0.0-1.0). Lower = more focused, Higher = more creative

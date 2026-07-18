@@ -54,6 +54,8 @@ export interface ModelInfo {
   displayName: string;
   description: string;
   contextWindow: number;
+  /** Model's real output ceiling from the API (outputTokenLimit). */
+  outputTokenLimit?: number;
 }
 
 export interface ListModelsResponse {

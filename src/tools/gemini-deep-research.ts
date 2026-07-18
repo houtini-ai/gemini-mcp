@@ -86,7 +86,7 @@ export class GeminiDeepResearchTool {
             message: iterationPrompt,
             model: model,
             temperature: 0.5,
-            maxTokens: 8192,
+            // No maxTokens: inherit the model's full output headroom.
             grounding: true
           });
 
@@ -221,7 +221,8 @@ Create a synthesis that:
             message: synthesisPrompt,
             model: model,
             temperature: 0.6,
-            maxTokens: 16384,
+            // No maxTokens: inherit the model's full output headroom — the
+            // final synthesis is the worst possible place to truncate.
             grounding: false
           });
 

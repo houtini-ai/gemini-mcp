@@ -132,7 +132,8 @@ export class GeminiService extends BaseService {
             name: cleanName,
             displayName: model.displayName || cleanName,
             description: model.description || `${cleanName} model`,
-            contextWindow: model.inputTokenLimit || 32_000
+            contextWindow: model.inputTokenLimit || 32_000,
+            outputTokenLimit: model.outputTokenLimit || undefined
           });
         }
       }
@@ -339,7 +340,7 @@ export class GeminiService extends BaseService {
 
       const config: any = {
         temperature,
-        maxOutputTokens: request.maxTokens ?? this.config.maxTokens,
+        maxOutputTokens: this.resolveMaxOutputTokens(modelName, request.maxTokens),
         safetySettings: this.mapSafetySettings(),
       };
 
@@ -508,6 +509,21 @@ export class GeminiService extends BaseService {
     }));
   }
 
+  /**
+   * Resolve the output-token budget for a call: full model headroom by
+   * default. maxOutputTokens is a CAP, not consumption — small defaults
+   * (8k/16k) were the source of "timeouts" that were really MAX_TOKENS:
+   * Gemini 3 thinking burned the tiny budget before any visible output.
+   * Requested values are clamped to the model's real outputTokenLimit
+   * (65,536 on current Gemini 3 text models — the 1M figure is INPUT),
+   * because the API rejects budgets above it.
+   */
+  private resolveMaxOutputTokens(modelName: string, requested?: number): number {
+    const limit = this.availableModels.find(m => m.name === modelName)?.outputTokenLimit
+      ?? this.config.maxTokens;
+    return requested !== undefined ? Math.min(requested, limit) : limit;
+  }
+
   async analyzeImages(request: ImageAnalysisRequest): Promise<string> {
     try {
       await this.ensureModelsInitialized();
@@ -523,7 +539,7 @@ export class GeminiService extends BaseService {
 
       const config: any = {
         temperature: request.temperature ?? this.config.temperature,
-        maxOutputTokens: request.maxTokens ?? 16384,
+        maxOutputTokens: this.resolveMaxOutputTokens(modelName, request.maxTokens),
         safetySettings: this.mapSafetySettings(),
         ...(request.globalMediaResolution && {
           mediaResolution: request.globalMediaResolution

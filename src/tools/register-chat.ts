@@ -30,14 +30,14 @@ export function register(ctx: ToolContext): void {
         max_tokens: z.number()
           .int()
           .min(1)
-          .max(65536)
           .optional()
-          .default(65536)
           .describe(
             'Output token budget INCLUDING Gemini 3 thinking tokens. ' +
-            'Leave unset — the default 65536 is correct for almost every call. ' +
-            'Values below 4096 are IGNORED and the default applies: thinking consumes ' +
-            'the whole budget and returns an empty response (finishReason=MAX_TOKENS).'
+            'OMIT THIS — the server allocates the model\'s full output ceiling ' +
+            '(queried live, 65,536 on current Gemini 3 text models). It is a cap, ' +
+            'not consumption — unused headroom costs nothing. Values below 4096 are ' +
+            'IGNORED (thinking burns them before any visible output) and values above ' +
+            'the model\'s real limit are clamped to it.'
           ),
         system_prompt: z.string()
           .optional()
@@ -69,9 +69,9 @@ export function register(ctx: ToolContext): void {
         });
 
         // Floor tiny caller budgets — MCP clients habitually pass caps like 256
-        // that thinking burns entirely, returning empty output. Below 4096 the
-        // default budget applies instead.
-        const effectiveMaxTokens = max_tokens !== undefined && max_tokens < 4096 ? 65536 : max_tokens;
+        // that thinking burns entirely, returning empty output. Below 4096 we
+        // drop the cap so the service resolves the model's full headroom.
+        const effectiveMaxTokens = max_tokens !== undefined && max_tokens < 4096 ? undefined : max_tokens;
 
         const response = await ctx.geminiService.chat({
           message,

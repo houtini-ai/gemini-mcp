@@ -59,7 +59,8 @@ Generate a complete, production-ready single-file HTML landing page.
         message: prompt,
         systemPrompt: SYSTEM_PROMPT,
         model: request.model,
-        maxTokens: 16384,
+        // No maxTokens: inherit the model's full output headroom — a full
+        // landing page plus thinking regularly overflowed 16384.
         grounding: false,
       });
       response = result.content;
