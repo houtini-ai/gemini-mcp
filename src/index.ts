@@ -144,10 +144,12 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled promise rejection', { reason, promise });
-  serverInstance?.shutdown();
-  process.exit(1);
+// A stray un-awaited rejection (e.g. a background poll or cleanup task) must
+// not kill the stdio transport and the user's whole session — tool-level
+// failures are already surfaced as per-request MCP error results. Sync
+// uncaughtException above stays fatal: state after one is unknowable.
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection (server continuing)', { reason });
 });
 
 async function main() {

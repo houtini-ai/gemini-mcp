@@ -30,8 +30,12 @@ export function register(ctx: ToolContext): void {
           .describe('Video aspect ratio: 16:9 (landscape) or 9:16 (portrait/vertical)'),
         resolution: z.enum(['720p', '1080p', '4k']).optional().default('1080p')
           .describe('Video resolution. Higher resolutions take longer to generate and result in larger files.'),
-        durationSeconds: z.union([z.literal(4), z.literal(6), z.literal(8)]).optional().default(8)
-          .describe('Video duration in seconds (4, 6, or 8 seconds)'),
+        // Plain number range, not union-of-literals: some MCP clients reject
+        // the {"enum":[...],"type":"number"} JSON Schema that the union
+        // compiles to. Veo only accepts 4/6/8, so we snap to the nearest
+        // legal value in the handler below.
+        durationSeconds: z.number().min(4).max(8).optional().default(8)
+          .describe('Video duration in seconds — 4, 6, or 8. Other values in range are rounded to the nearest of those.'),
         generateAudio: z.boolean().optional().default(true)
           .describe('Generate native synchronized audio effects and dialogue based on the prompt'),
         sampleCount: z.number().min(1).max(4).optional().default(1)
@@ -97,13 +101,18 @@ export function register(ctx: ToolContext): void {
           );
         }
 
+        // Snap to the durations Veo actually accepts (4, 6, 8).
+        const legalDuration = durationSeconds === undefined
+          ? undefined
+          : ([4, 6, 8] as const).reduce((a, b) => Math.abs(b - durationSeconds) < Math.abs(a - durationSeconds) ? b : a);
+
         const videoTool = new GenerateVideoTool(ctx.geminiService);
         const { content, metadata } = await videoTool.execute({
           prompt,
           model,
           aspectRatio,
           resolution,
-          durationSeconds,
+          durationSeconds: legalDuration,
           generateAudio,
           sampleCount,
           seed,
