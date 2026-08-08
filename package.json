@@ -97,7 +97,8 @@
     "dist/**/*",
     "README.md",
     "LICENSE",
-    "houtini-logo.jpg",
+    "assets/logo.png",
+    "assets/icon.png",
     "server.json",
     ".env.example",
     "claude_desktop_config_example.json"

@@ -75,4 +75,46 @@ const logger = winston.createLogger({
   transports
 });
 
+/**
+ * Log a fatal error, let the transports drain, then exit.
+ *
+ * winston's File transports write asynchronously. Calling process.exit()
+ * directly after logger.error() tears the process down while those streams are
+ * still closing, which on Windows trips a libuv assertion
+ * (`!(handle->flags & UV_HANDLE_CLOSING)`) and exits 0xC0000409. The effect is
+ * that a recoverable, well-diagnosed problem - a bad GEMINI_API_KEY - reaches
+ * the user as a native crash dump instead of the message we just logged.
+ *
+ * The timeout is a backstop: a wedged transport must not hang startup.
+ */
+export function exitAfterFlush(code: number): void {
+  process.exitCode = code;
+
+  // Flush the file transports. Their writes are async; process.exit() straight
+  // after logger.error() would tear the process down mid-write.
+  logger.end();
+
+  // Release anything still holding the event loop open. At startup-failure time
+  // that is the in-flight HTTPS request to the Gemini API (Socket / TLSSocket,
+  // kept alive by undici's connection pool) plus the pending log writes.
+  //
+  // We deliberately do NOT call process.exit() here. Forcing exit while those
+  // handles are mid-close trips a libuv assertion on Windows
+  // (`!(handle->flags & UV_HANDLE_CLOSING)`, exit 0xC0000409), which turned a
+  // clean, well-diagnosed "bad GEMINI_API_KEY" into a native crash dump - the
+  // one failure every new user is most likely to hit. Destroying the sockets
+  // lets the loop drain and Node exit on its own with the code set above.
+  for (const handle of ((process as never as { _getActiveHandles?: () => unknown[] })._getActiveHandles?.() ?? [])) {
+    const h = handle as { destroy?: () => void; unref?: () => void };
+    // Leave stdio alone - destroying it would cut off the error we just wrote.
+    if (h === process.stdout || h === process.stderr || h === process.stdin) continue;
+    try {
+      h.destroy?.();
+      h.unref?.();
+    } catch {
+      // A handle that refuses to close must not mask the original failure.
+    }
+  }
+}
+
 export default logger;

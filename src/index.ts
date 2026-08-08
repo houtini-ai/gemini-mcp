@@ -9,7 +9,7 @@ import { config, validateConfig } from './config/index.js';
 import { GeminiService } from './services/gemini/index.js';
 import { GeminiImageService } from './services/gemini/image-service.js';
 import { MediaServer } from './services/media-server.js';
-import logger from './utils/logger.js';
+import logger, { exitAfterFlush } from './utils/logger.js';
 
 import { registerViewers } from './tools/register-viewers.js';
 import { registerGeminiHelp } from './tools/gemini-help.js';
@@ -49,7 +49,7 @@ class GeminiMcpServer {
       validateConfig();
     } catch (error) {
       logger.error('Configuration validation failed', { error });
-      process.exit(1);
+      exitAfterFlush(1);
     }
 
     this.geminiService = new GeminiService(config.gemini, config.server.imageOutputDir);
@@ -115,7 +115,7 @@ class GeminiMcpServer {
       });
     } catch (error) {
       logger.error('Failed to start Gemini MCP Server', { error });
-      process.exit(1);
+      exitAfterFlush(1);
     }
   }
 
@@ -141,7 +141,7 @@ process.on('SIGTERM', () => {
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught exception', { error });
   serverInstance?.shutdown();
-  process.exit(1);
+  exitAfterFlush(1);
 });
 
 // A stray un-awaited rejection (e.g. a background poll or cleanup task) must

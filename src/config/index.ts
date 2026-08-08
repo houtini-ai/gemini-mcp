@@ -1,7 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { Config } from './types.js';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
+
+/**
+ * The single source of truth for the server version. Read from package.json at
+ * runtime rather than hardcoded, so the MCP handshake can never drift from the
+ * published version. Compiled to dist/config/, so package.json is two up.
+ */
+const SERVER_VERSION: string = JSON.parse(
+  readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
+).version;
 
 export const config: Config = {
   gemini: {
@@ -37,7 +47,7 @@ export const config: Config = {
   },
   server: {
     name: 'gemini-mcp',
-    version: '2.6.0',
+    version: SERVER_VERSION,
     imageOutputDir: process.env.GEMINI_IMAGE_OUTPUT_DIR
   },
   logging: {
