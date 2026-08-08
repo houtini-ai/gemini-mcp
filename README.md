@@ -2,15 +2,17 @@
   <img src="https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/assets/logo.png" width="120" height="120" alt="Gemini MCP" />
 </div>
 
-# @houtini/gemini-mcp
+# Gemini MCP - Google Gemini image generation, video and search grounding inside Claude
 
 [![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@houtini/gemini-mcp)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?style=flat-square)](https://registry.modelcontextprotocol.io)
 [![Known Vulnerabilities](https://snyk.io/test/github/houtini-ai/gemini-mcp/badge.svg)](https://snyk.io/test/github/houtini-ai/gemini-mcp)
 
-I've been running this MCP server in my Claude Desktop setup for months. It's one of the few I leave on permanently — not because Gemini replaces Claude, but because grounded search, image generation, SVG diagrams, and video are things Gemini does well. Having them as tools inside Claude beats switching browser tabs.
+I've been running this Gemini MCP server in my Claude Desktop setup for months. It's one of the few I leave on permanently — not because Gemini replaces Claude, but because grounded search, image generation, SVG diagrams, and video are things Gemini does well. Having them as tools inside Claude beats switching browser tabs.
 
-Thirteen tools. One `npx` command.
+Thirteen tools, covering the models people actually come looking for: **Nano Banana Pro** (`gemini-3-pro-image-preview`) for image generation, **Veo 3.1** for video with synchronised audio, and **Gemini 3.1 Pro** for chat and deep research with Google Search grounding. Images, SVGs and video preview inline in Claude Desktop through MCP Apps rather than landing as a file path you have to go and open.
+
+One `npx` command.
 
 <p align="center">
   <a href="https://glama.ai/mcp/servers/@houtini-ai/gemini-mcp">
@@ -32,11 +34,11 @@ Generated images, SVGs, and videos render inline in Claude Desktop with zoom con
 
 | Image generation | SVG / diagram generation |
 |:---:|:---:|
-| ![Image preview](image-preview-mcp-app.jpg) | ![SVG preview](diagram-preview-mcp-app.jpg) |
+| ![Image preview](https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/image-preview-mcp-app.jpg) | ![SVG preview](https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/diagram-preview-mcp-app.jpg) |
 
 | Image embed | SVG embed | Video embed |
 |:---:|:---:|:---:|
-| ![Image embed](image-embed.png) | ![SVG embed](svg-embed.png) | ![Video embed](video-embed.png) |
+| ![Image embed](https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/image-embed.png) | ![SVG embed](https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/svg-embed.png) | ![Video embed](https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/video-embed.png) |
 
 ---
 
@@ -201,7 +203,7 @@ Four styles:
 
 The output is actual SVG code — edit it, animate it, embed it in HTML, commit it to a repo. No rasterising, no export steps, no Figma required.
 
-![SVG generation in Claude Desktop](svg-embed.png)
+![SVG generation in Claude Desktop](https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/svg-embed.png)
 
 ### Image editing and analysis
 
