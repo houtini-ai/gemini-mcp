@@ -7,6 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@houtini/gemini-mcp)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?style=flat-square)](https://registry.modelcontextprotocol.io)
 [![Known Vulnerabilities](https://snyk.io/test/github/houtini-ai/gemini-mcp/badge.svg)](https://snyk.io/test/github/houtini-ai/gemini-mcp)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
 
 I've been running this Gemini MCP server in my Claude Desktop setup for months. It's one of the few I leave on permanently — not because Gemini replaces Claude, but because grounded search, image generation, SVG diagrams, and video are things Gemini does well. Having them as tools inside Claude beats switching browser tabs.
 
