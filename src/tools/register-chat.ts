@@ -9,8 +9,20 @@ export function register(ctx: ToolContext): void {
     'gemini_chat',
     {
       title: 'Gemini Chat',
+      // The essentials live HERE, not only in the per-parameter descriptions.
+      // Some clients drop parameter descriptions when they present tools to the
+      // model - the tool description survives - so anything a caller must not
+      // get wrong has to be in this string or it may never be read. The
+      // max_tokens line is the one that matters: a small cap is spent on Gemini
+      // 3 thinking before any visible output, and the empty result reads as a
+      // timeout rather than as the cap it actually is.
       description:
-        'Chat with Google Gemini models. Default model: gemini-3.1-pro-preview. ' +
+        'Chat with Google Gemini models. Grounded in Google Search by default, ' +
+        'on gemini-3.1-pro-preview. ' +
+        'DO NOT SET max_tokens - the server allocates the model\'s full output ' +
+        'ceiling automatically. It is a cap, not consumption, so unused headroom ' +
+        'costs nothing; setting a small one makes Gemini 3 thinking burn the whole ' +
+        'budget and return empty output that looks like a timeout. ' +
         '[MCP_RECOMMENDED_TIMEOUT_MS: 300000]',
       inputSchema: {
         message: z.string().describe('The message to send'),

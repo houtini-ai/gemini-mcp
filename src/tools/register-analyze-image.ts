@@ -11,10 +11,16 @@ export function register(ctx: ToolContext): void {
     'analyze_image',
     {
       title: 'Analyze Image',
+      // See register-chat.ts for why the max_tokens warning is in the tool
+      // description rather than only on the parameter.
       description:
         'Analyze and extract information from one or more images using Gemini multimodal understanding. ' +
-        'Returns a text analysis — no image is generated. ' +
-        'Default model: gemini-3-pro-preview. [MCP_RECOMMENDED_TIMEOUT_MS: 300000]',
+        'Returns a text analysis - no image is generated. ' +
+        'Default model: gemini-3-pro-preview. ' +
+        'DO NOT SET max_tokens - the server allocates the model\'s full output ' +
+        'ceiling automatically; a small cap is spent on Gemini 3 thinking and ' +
+        'returns empty output that looks like a timeout. ' +
+        '[MCP_RECOMMENDED_TIMEOUT_MS: 300000]',
       inputSchema: {
         images: z.array(imageInputSchema)
           .min(1)
