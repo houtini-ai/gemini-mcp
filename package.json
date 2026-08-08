@@ -1,9 +1,9 @@
 {
   "name": "@houtini/gemini-mcp",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "mcpName": "io.github.houtini-ai/gemini",
   "type": "module",
-  "description": "Professional Model Context Protocol server for Google Gemini AI models with enterprise-grade features",
+  "description": "Gemini MCP server for Claude - image generation, video, SVG and Google Search grounding. Nano Banana Pro, Veo 3.1 and Gemini 3.1 Pro as tools.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
