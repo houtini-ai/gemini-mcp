@@ -70,9 +70,17 @@ class GeminiMcpServer {
 
   async start(): Promise<void> {
     try {
-      const isValid = await this.geminiService.validateConfig();
-      if (!isValid) {
-        throw new Error('Gemini API key validation failed');
+      // Validate the API key, but do NOT abort startup on failure: the server must
+      // still come up and list its tools even before a valid GEMINI_API_KEY is set
+      // (e.g. the Docker MCP registry's keyless build, or a first-run user). A bad or
+      // missing key only warns here; real tool calls surface the error loudly.
+      try {
+        const isValid = await this.geminiService.validateConfig();
+        if (!isValid) {
+          logger.warn('Gemini API key validation failed — starting anyway; tool calls will error until a valid GEMINI_API_KEY is set.');
+        }
+      } catch (err) {
+        logger.warn(`Gemini API key validation could not complete (${(err as Error).message}) — starting anyway; tool calls will error until a valid GEMINI_API_KEY is set.`);
       }
 
       logger.info('Starting Gemini MCP Server...');
