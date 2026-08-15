@@ -124,3 +124,13 @@ output/
 
 # Claude Code local state
 .claude/
+
+# --- secrets hardening (never commit) ---
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+gsc*.json
