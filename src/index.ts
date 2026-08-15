@@ -2,6 +2,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { stripSchemaDialect } from './strip-schema-dialect.js';
 import { dirname, resolve } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
@@ -105,7 +106,10 @@ class GeminiMcpServer {
         tools: [...TOOL_NAMES],
       });
 
-      const transport = new StdioServerTransport();
+      // The SDK emits draft-07 tool schemas because it converts them without a target,
+      // and strict clients reject the dialect outright — which took every tool in this
+      // server offline. See src/strip-schema-dialect.ts for the full diagnosis.
+      const transport = stripSchemaDialect(new StdioServerTransport());
       await this.server.connect(transport);
 
       logger.info('Gemini MCP Server started successfully', {
