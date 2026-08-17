@@ -1,0 +1,20 @@
+# Keep the Docker build context lean. The Dockerfile runs a fresh `npm ci` and
+# `npm run build`, so node_modules and the build output are regenerated inside the
+# image — shipping the host copies only bloats the context, and the host's Windows
+# node_modules would corrupt the Linux image if COPY . . pulled it in.
+node_modules
+dist
+build
+*.tsbuildinfo
+
+# Never needed to build or run the server
+.git
+.github
+*.log
+.env
+.env.*
+*.mcpb
+mcpb-dist
+mcpb-staging
+.DS_Store
+Thumbs.db
