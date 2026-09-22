@@ -268,8 +268,14 @@ export class GeminiService extends BaseService {
     return this.defaultModel;
   }
 
+  /** Model for the deep-research synthesis step (reasoning-heavy). */
   getDeepResearchModel(): string {
     return this.config.defaultDeepResearchModel || this.defaultModel;
+  }
+
+  /** Model for the grounded deep-research search passes (fast). */
+  getDeepResearchSearchModel(): string {
+    return this.config.defaultDeepResearchSearchModel || this.getDeepResearchModel();
   }
 
   private addInlineCitations(text: string, groundingMetadata: any): string {

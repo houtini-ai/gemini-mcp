@@ -170,9 +170,9 @@ Use gemini:gemini_deep_research with:
   max_iterations=5
 ```
 
-Runs several grounded search passes and then writes them up as one report. It takes two to five minutes, which is worth it when you need proper coverage rather than a quick answer.
+Runs grounded search passes and then writes them up as one report. The passes run on `gemini-3.8-flash` with low thinking (they're gathering facts, not reasoning about them), and the synthesis at the end runs on `gemini-3.1-pro-preview` with high thinking. Two passes plus a synthesis is the default and lands in two to three minutes.
 
-Keep `max_iterations` at 3 or 4 in Claude Desktop (there's a four-minute tool timeout). In an IDE or an agent framework, 7 to 10 iterations produces noticeably better synthesis. `focus_areas` takes an array if you want to steer it.
+That split matters more than it sounds. Earlier versions ran everything on Pro with full thinking, and one pass on a broad question could run past Claude Desktop's four-minute timeout on its own. Keep `max_iterations` at 2 or 3 in Claude Desktop; in an IDE or an agent framework, 5 to 7 produces noticeably better synthesis. `focus_areas` takes an array if you want to steer each pass.
 
 ### Image generation with search grounding
 
@@ -336,7 +336,8 @@ Image, SVG, video and landing-page results each open in an MCP App viewer with z
 |----------|----------|---------|-------------|
 | `GEMINI_API_KEY` | Yes | - | Google AI API key from [AI Studio](https://aistudio.google.com/apikey) |
 | `GEMINI_DEFAULT_MODEL` | No | `gemini-3.1-pro-preview` | Model for `gemini_chat` |
-| `GEMINI_DEEP_RESEARCH_MODEL` | No | `gemini-3.1-pro-preview` | Model for `gemini_deep_research` |
+| `GEMINI_DEEP_RESEARCH_MODEL` | No | `gemini-3.1-pro-preview` | Synthesis model for `gemini_deep_research` |
+| `GEMINI_DEEP_RESEARCH_SEARCH_MODEL` | No | `gemini-3.8-flash` | Model for the grounded search passes in `gemini_deep_research` |
 | `GEMINI_IMAGE_ANALYSIS_MODEL` | No | `gemini-3.1-pro-preview` | Model for `analyze_image` |
 | `GEMINI_IMAGE_DESCRIBE_MODEL` | No | `gemini-3.8-flash` | Model for `describe_image` |
 | `GEMINI_IMAGE_GENERATION_MODEL` | No | `gemini-3-pro-image` | Model for `generate_image` and `edit_image` |
@@ -353,7 +354,7 @@ Image, SVG, video and landing-page results each open in an MCP App viewer with z
 | Tool | Description |
 |------|-------------|
 | `gemini_chat` | Chat with Gemini 3.1 Pro. Google Search grounding on by default. Supports `thinking_level` |
-| `gemini_deep_research` | Multi-step iterative research with Google Search, synthesised into a report |
+| `gemini_deep_research` | Grounded search passes on Flash, synthesised into a report by 3.1 Pro. Default 2 passes |
 | `gemini_list_models` | Lists the models your API key can see, live |
 | `gemini_help` | Documentation for every tool without leaving Claude |
 | `gemini_prompt_assistant` | Expert guidance for image generation with nine chart design systems |
@@ -375,8 +376,8 @@ Checked against the live models API on 22 September 2026. `gemini_list_models` w
 
 | Model | Used by | Notes |
 |-------|---------|-------|
-| `gemini-3.1-pro-preview` | `gemini_chat`, `gemini_deep_research`, `analyze_image` | Default. Still the strongest reasoning model Google ships, preview label or not |
-| `gemini-3.8-flash` | `describe_image` | Default. Google's GA workhorse as of September 2026; a good `gemini_chat` choice when you want speed |
+| `gemini-3.1-pro-preview` | `gemini_chat`, `gemini_deep_research` (synthesis), `analyze_image` | Default. Still the strongest reasoning model Google ships, preview label or not |
+| `gemini-3.8-flash` | `describe_image`, `gemini_deep_research` (search passes) | Default. Google's GA workhorse as of September 2026; a good `gemini_chat` choice when you want speed |
 | `gemini-3.7-flash`, `3.6`, `3.5`, `3.5-flash-lite`, `3.1-flash-lite` | any text tool | Earlier GA Flash releases, all accepted |
 | `gemini-3-pro-image` | `generate_image`, `edit_image` | Default. Nano Banana Pro, GA. 4K, real text, conversational editing |
 | `gemini-3.1-flash-image` | `generate_image`, `edit_image` | Nano Banana 2, GA. Near-Pro quality, Flash speed and price |

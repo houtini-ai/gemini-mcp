@@ -260,7 +260,7 @@ Conduct comprehensive multi-step research on complex topics using iterative anal
 \`\`\`
 gemini_deep_research(
   research_question="What are the implications of quantum computing for cryptography?",
-  max_iterations=5,
+  max_iterations=3,
   focus_areas=["RSA encryption", "Post-quantum algorithms"]
 )
 \`\`\`
@@ -270,12 +270,12 @@ gemini_deep_research(
 **research_question** (required)
 Complex research question or topic to investigate deeply
 
-**max_iterations** (optional, default: 5)
-Number of research iterations (3-10)
-More iterations = deeper research but longer wait time
-• 3-4: Quick overview (4-8 minutes)
-• 5-7: Comprehensive analysis (8-15 minutes)
-• 8-10: Exhaustive research (15-25 minutes)
+**max_iterations** (optional, default: 2)
+Number of grounded search passes (1-10). A synthesis step runs after 2 or more.
+Passes run on gemini-3.8-flash (fast); synthesis runs on gemini-3.1-pro-preview.
+• 2-3: Claude Desktop (fits the 4-minute timeout, about 2-3 minutes)
+• 5-7: Comprehensive analysis in IDEs and agent frameworks
+• 8-10: Exhaustive research, long-timeout environments only
 
 **focus_areas** (optional, array)
 Specific areas to focus the research on

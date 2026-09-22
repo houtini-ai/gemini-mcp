@@ -10,7 +10,8 @@ export interface GeminiConfig {
   safetySettings: SafetySetting[];
   // Task-specific default models
   defaultModel: string;                // chat / text generation
-  defaultDeepResearchModel: string;    // deep_research
+  defaultDeepResearchModel: string;    // deep_research synthesis (reasoning)
+  defaultDeepResearchSearchModel: string; // deep_research search passes (fast, grounded)
   defaultImageAnalysisModel: string;   // analyze_image (multimodal reasoning)
   defaultImageDescribeModel: string;   // describe_image (lighter vision task)
   defaultImageGenerationModel: string; // generate_image / edit_image

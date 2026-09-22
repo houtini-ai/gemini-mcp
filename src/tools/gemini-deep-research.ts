@@ -11,25 +11,33 @@ interface ResearchStep {
   usageMetadata: UsageMetadata;
 }
 
+/** Two grounded passes plus a synthesis: the smallest run that is actually research. */
+export const DEFAULT_ITERATIONS = 2;
+
 export class GeminiDeepResearchTool {
   constructor(private geminiService: GeminiService) {}
 
   async execute(args: any): Promise<TextContent[]> {
     try {
-      logger.info('Starting deep research', { 
-        question: args.research_question,
-        maxIterations: args.max_iterations || 5
-      });
-
       const researchQuestion = args.research_question;
-      const maxIterations = Math.min(args.max_iterations || 1, 10);
+      const maxIterations = Math.min(args.max_iterations || DEFAULT_ITERATIONS, 10);
+      // Two models: fast grounded passes to gather facts, then a reasoning model
+      // to synthesise. An explicit `model` argument is used for both.
+      const searchModel = args.model || this.geminiService.getDeepResearchSearchModel();
       const model = args.model || this.geminiService.getDeepResearchModel();
       const focusAreas: string[] = args.focus_areas || [];
+
+      logger.info('Starting deep research', {
+        question: researchQuestion,
+        maxIterations,
+        searchModel,
+        synthesisModel: model,
+      });
 
       const modelContextWindow = this.geminiService.getModelContextWindow(model);
       const synthesisReserve = Math.floor(modelContextWindow * 0.20);
       const researchBudget = Math.floor(modelContextWindow * 0.75);
-      
+
       logger.info('Token budget allocation', {
         model,
         contextWindow: modelContextWindow,
@@ -40,18 +48,18 @@ export class GeminiDeepResearchTool {
 
       let report = '# Deep Research Report\n\n';
       report += `## Research Question\n${researchQuestion}\n\n`;
-      
+
       if (focusAreas.length > 0) {
         report += `## Focus Areas\n${focusAreas.map((area: string) => `- ${area}`).join('\n')}\n\n`;
       }
 
       report += '## Research Process\n\n';
-      report += `*Conducting ${maxIterations} research iteration${maxIterations > 1 ? 's' : ''} with Google Search grounding...*\n\n`;
+      report += `*Conducting ${maxIterations} research iteration${maxIterations > 1 ? 's' : ''} with Google Search grounding on ${searchModel}, synthesised by ${model}...*\n\n`;
 
       const researchSteps: ResearchStep[] = [];
       let cumulativeTokens = 0;
       let consecutiveFailures = 0;
-      
+
       for (let i = 0; i < maxIterations; i++) {
         if (cumulativeTokens >= researchBudget) {
           logger.warn('Approaching token budget, stopping research iterations', {
@@ -62,7 +70,7 @@ export class GeminiDeepResearchTool {
           break;
         }
 
-        logger.info(`Research iteration ${i + 1}/${maxIterations}`, { 
+        logger.info(`Research iteration ${i + 1}/${maxIterations}`, {
           tokensUsed: cumulativeTokens,
           budget: researchBudget
         });
@@ -84,15 +92,18 @@ export class GeminiDeepResearchTool {
         try {
           searchResponse = await this.geminiService.chat({
             message: iterationPrompt,
-            model: model,
+            model: searchModel,
             temperature: 0.5,
+            // Low thinking: this pass is about collecting grounded facts quickly.
+            // The reasoning happens once, in the synthesis step below.
+            thinkingLevel: 'LOW',
             // No maxTokens: inherit the model's full output headroom.
             grounding: true
           });
 
           if (searchResponse.usageMetadata) {
             cumulativeTokens += searchResponse.usageMetadata.totalTokenCount;
-            
+
             logger.info(`Iteration ${i + 1} token usage`, {
               iteration: searchResponse.usageMetadata.totalTokenCount,
               cumulative: cumulativeTokens,
@@ -103,7 +114,7 @@ export class GeminiDeepResearchTool {
           if (searchResponse.groundingMetadata) {
             const hasSearches = (searchResponse.groundingMetadata.webSearchQueries?.length ?? 0) > 0;
             const hasSupports = (searchResponse.groundingMetadata.groundingSupports?.length ?? 0) > 0;
-            
+
             if (!hasSearches && !hasSupports) {
               logger.warn(`Iteration ${i + 1}: Grounding enabled but no searches performed`, {
                 responsePreview: searchResponse.content.substring(0, 200)
@@ -121,12 +132,12 @@ export class GeminiDeepResearchTool {
           }
 
           consecutiveFailures = 0;
-          
+
         } catch (error) {
           consecutiveFailures++;
           const errorMessage = (error as Error).message || 'Unknown error';
-          
-          logger.error(`Research iteration ${i + 1} failed`, { 
+
+          logger.error(`Research iteration ${i + 1} failed`, {
             error: errorMessage,
             consecutiveFailures
           });
@@ -154,7 +165,7 @@ export class GeminiDeepResearchTool {
         }
 
         const sources = this.extractSources(searchResponse.content);
-        
+
         researchSteps.push({
           query: iterationPrompt,
           response: searchResponse.content,
@@ -221,6 +232,7 @@ Create a synthesis that:
             message: synthesisPrompt,
             model: model,
             temperature: 0.6,
+            thinkingLevel: 'HIGH',
             // No maxTokens: inherit the model's full output headroom — the
             // final synthesis is the worst possible place to truncate.
             grounding: false
@@ -257,11 +269,11 @@ Create a synthesis that:
         report += '*Note: No external sources were cited. This may indicate grounding did not function properly.*\n';
       }
 
-      report += `\n---\n\n*Research completed with ${researchSteps.length} successful iteration${researchSteps.length > 1 ? 's' : ''} using ${model}*\n`;
+      report += `\n---\n\n*Research completed with ${researchSteps.length} successful iteration${researchSteps.length > 1 ? 's' : ''} on ${searchModel}${researchSteps.length > 1 ? `, synthesised by ${model}` : ''}*\n`;
       report += `*Total tokens used: ${cumulativeTokens.toLocaleString()} / ${modelContextWindow.toLocaleString()} available*\n`;
       report += `*Context window utilization: ${((cumulativeTokens / modelContextWindow) * 100).toFixed(1)}%*\n`;
 
-      logger.info('Deep research completed successfully', { 
+      logger.info('Deep research completed successfully', {
         iterations: researchSteps.length,
         totalSources: allSources.size,
         totalTokens: cumulativeTokens,
@@ -304,7 +316,7 @@ Create a synthesis that:
       const step = steps[i];
       const summaryLength = Math.min(1000, step.response.length);
       const stepSummary = `Previous finding ${i + 1}: ${step.response.substring(0, summaryLength)}${summaryLength < step.response.length ? '...' : ''}\n\n`;
-      
+
       if (currentLength + stepSummary.length > maxChars) {
         logger.info('Context budget reached, including most recent research only', {
           includedSteps: steps.length - i,
@@ -328,7 +340,7 @@ Create a synthesis that:
       const truncatedResponse = step.response.length > maxCharsPerStep
         ? step.response.substring(0, maxCharsPerStep) + '...'
         : step.response;
-      
+
       return `Research Iteration ${i + 1}:\n${truncatedResponse}`;
     }).join('\n\n');
   }
@@ -337,7 +349,7 @@ Create a synthesis that:
     const sources: string[] = [];
     const urlRegex = /https?:\/\/[^\s)]+/g;
     const matches = content.match(urlRegex);
-    
+
     if (matches) {
       matches.forEach(url => {
         const cleanUrl = url.replace(/[.,;:]+$/, '');
@@ -346,7 +358,7 @@ Create a synthesis that:
         }
       });
     }
-    
+
     return [...new Set(sources)];
   }
 }

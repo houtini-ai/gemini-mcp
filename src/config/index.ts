@@ -36,7 +36,12 @@ export const config: Config = {
       }
     ],
     defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-3.1-pro-preview',                // chat / text
-    defaultDeepResearchModel: process.env.GEMINI_DEEP_RESEARCH_MODEL || 'gemini-3.1-pro-preview',  // deep_research
+    defaultDeepResearchModel: process.env.GEMINI_DEEP_RESEARCH_MODEL || 'gemini-3.1-pro-preview',  // deep_research synthesis
+    // The grounded search passes only gather facts, so they run on the fast GA
+    // Flash model with low thinking; Pro + high thinking is saved for synthesis.
+    // Two Flash passes plus a Pro synthesis fit inside Claude Desktop's 4-minute
+    // tool timeout, where one Pro pass with high thinking often did not.
+    defaultDeepResearchSearchModel: process.env.GEMINI_DEEP_RESEARCH_SEARCH_MODEL || 'gemini-3.8-flash',
     defaultImageAnalysisModel: process.env.GEMINI_IMAGE_ANALYSIS_MODEL || 'gemini-3.1-pro-preview', // analyze_image
     defaultImageDescribeModel: process.env.GEMINI_IMAGE_DESCRIBE_MODEL || 'gemini-3.8-flash',        // describe_image (lighter task; GA Flash)
     defaultImageGenerationModel: process.env.GEMINI_IMAGE_GENERATION_MODEL || 'gemini-3-pro-image',   // generate_image / edit_image (Nano Banana Pro, GA)
