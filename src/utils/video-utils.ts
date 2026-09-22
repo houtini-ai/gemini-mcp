@@ -30,7 +30,7 @@ export async function extractThumbnail(options: ThumbnailOptions): Promise<strin
   const thumbnailPath = outputPath ||
     videoPath.replace(/\.(mp4|webm)$/, '-thumbnail.jpg');
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const ffmpegArgs = [
       '-i', videoPath,
       '-ss', timeSeconds.toString(),

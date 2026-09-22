@@ -1,5 +1,4 @@
-import { App } from '@modelcontextprotocol/ext-apps';
-import { setupPathCopy, showPrompt, showContent } from './shared.js';
+import { setupApp, setupPathCopy, showPrompt, showContent } from './shared.js';
 
 interface VideoResult {
   videoPath?: string;
@@ -14,15 +13,16 @@ interface VideoResult {
   htmlPlayerPath?: string;
 }
 
-const app = new App({ name: 'Gemini Video Viewer', version: '1.0.0' });
+function isVideoResult(data: unknown): data is VideoResult {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as VideoResult;
+  return !!(d.videoUrl || d.videoPath);
+}
 
-app.ontoolresult = (result: { structuredContent?: VideoResult }) => {
-  const data = result.structuredContent;
-  if (!data || (!data.videoUrl && !data.videoPath)) return;
-  render(data);
-};
-
-app.connect();
+setupApp<VideoResult>('Gemini Video Viewer', isVideoResult, render, {
+  unavailableMessage:
+    'No video data arrived from the host. The video is saved on disk — see the tool result text for its path.',
+});
 
 function render(data: VideoResult) {
   const loading = document.getElementById('loading')!;

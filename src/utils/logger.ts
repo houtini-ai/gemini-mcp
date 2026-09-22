@@ -34,7 +34,7 @@ if (shouldUseFileLogging) {
         maxFiles: 5,
       })
     );
-  } catch (error) {
+  } catch {
     // Fallback to console only if directory creation fails
     process.stderr.write(`Warning: Could not create log directory at ${logDir}. File logging disabled.\n`);
   }

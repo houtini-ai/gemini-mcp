@@ -6,6 +6,7 @@ import { McpError, createToolResult } from '../utils/error-handler.js';
 import { processGeneratedImage, type ProcessedImage } from '../utils/image-utils.js';
 import { resolveImageInputs } from '../utils/resolve-images.js';
 import { savedFileMessage } from '../utils/tool-wrapper.js';
+import { stashViewerPayload, viewerRefLine } from '../utils/viewer-payload-store.js';
 import { imageInputSchema } from './schemas.js';
 import type { ToolContext } from './types.js';
 
@@ -25,7 +26,8 @@ function buildContent(
   description: string | undefined,
   prompt: string,
   groundingSources?: Array<{ title: string; url: string }>,
-  thoughtSignature?: string
+  thoughtSignature?: string,
+  viewerRef?: string
 ) {
   const content: Array<
     | { type: 'text'; text: string }
@@ -60,6 +62,10 @@ function buildContent(
   if (thoughtSignature) {
     lines.push(`\n**thoughtSignature** (for conversational editing — pass to edit_image): \`${thoughtSignature}\``);
   }
+
+  // Lets the App viewer recover structuredContent on hosts that strip it
+  // (Claude Desktop). See src/utils/viewer-payload-store.ts.
+  if (viewerRef) lines.push(viewerRefLine(viewerRef));
 
   content.push({
     type: 'text',
@@ -207,9 +213,11 @@ export function register(ctx: ToolContext): void {
           });
         }
 
+        const structuredContent = buildStructuredContent(ctx, processed, result.description, prompt, result.groundingSources);
+        const viewerRef = stashViewerPayload(structuredContent);
         return {
-          structuredContent: buildStructuredContent(ctx, processed, result.description, prompt, result.groundingSources),
-          content: buildContent(processed, result.description, prompt, result.groundingSources, undefined),
+          structuredContent,
+          content: buildContent(processed, result.description, prompt, result.groundingSources, undefined, viewerRef),
         };
       } catch (error) {
         logger.error('generate_image tool failed', { error });
@@ -296,9 +304,11 @@ export function register(ctx: ToolContext): void {
 
         const editPrompt = `[EDIT] ${prompt}`;
 
+        const structuredContent = buildStructuredContent(ctx, processed, result.description, editPrompt, result.groundingSources);
+        const viewerRef = stashViewerPayload(structuredContent);
         return {
-          structuredContent: buildStructuredContent(ctx, processed, result.description, editPrompt, result.groundingSources),
-          content: buildContent(processed, result.description, editPrompt, result.groundingSources, undefined),
+          structuredContent,
+          content: buildContent(processed, result.description, editPrompt, result.groundingSources, undefined, viewerRef),
         };
       } catch (error) {
         logger.error('edit_image tool failed', { error });

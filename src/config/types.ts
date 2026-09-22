@@ -19,6 +19,8 @@ export interface GeminiConfig {
   defaultGrounding: boolean;
   allowExperimentalModels?: boolean;
   requestTimeoutMs: number;
+  /** Total attempts per HTTP request to the Gemini API; 1 disables retries. */
+  retryAttempts: number;
 }
 
 export interface ServerConfig {

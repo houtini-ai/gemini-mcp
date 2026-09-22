@@ -4,7 +4,6 @@ import { McpError } from '../utils/error-handler.js';
 import { extractThumbnail, generateVideoPlayerHTML, saveVideoPlayerHTML } from '../utils/video-utils.js';
 import logger from '../utils/logger.js';
 import fs from 'fs/promises';
-import path from 'path';
 
 interface VideoResult {
   videoPath: string;

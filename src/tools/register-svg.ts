@@ -5,6 +5,7 @@ import { dirname, resolve } from 'path';
 import logger from '../utils/logger.js';
 import { McpError, createToolResult } from '../utils/error-handler.js';
 import { savedFileMessage } from '../utils/tool-wrapper.js';
+import { stashViewerPayload, viewerRefLine } from '../utils/viewer-payload-store.js';
 import { GenerateSVGTool } from './generate-svg.js';
 import type { ToolContext } from './types.js';
 
@@ -69,18 +70,22 @@ export function register(ctx: ToolContext): void {
 
         logger.info('SVG saved successfully', { savedPath: absolutePath });
 
+        const structuredContent = {
+          svgContent,
+          mimeType: 'image/svg+xml',
+          savedPath: absolutePath,
+          description: `${style} style SVG graphic (${width}x${height})`,
+          prompt
+        };
+        // Lets the App viewer recover structuredContent on hosts that strip it
+        // (Claude Desktop). See src/utils/viewer-payload-store.ts.
+        const viewerRef = stashViewerPayload(structuredContent);
         return {
-          structuredContent: {
-            svgContent,
-            mimeType: 'image/svg+xml',
-            savedPath: absolutePath,
-            description: `${style} style SVG graphic (${width}x${height})`,
-            prompt
-          },
+          structuredContent,
           content: [
             {
               type: 'text' as const,
-              text: savedFileMessage('SVG saved', absolutePath)
+              text: `${savedFileMessage('SVG saved', absolutePath)}\n${viewerRefLine(viewerRef)}`
             }
           ]
         };

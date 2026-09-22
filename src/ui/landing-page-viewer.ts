@@ -1,5 +1,4 @@
-import { App } from '@modelcontextprotocol/ext-apps';
-import { setupPathCopy, copyToClipboard, showContent } from './shared.js';
+import { setupApp, setupPathCopy, copyToClipboard, showContent } from './shared.js';
 
 interface LandingPageResult {
   html: string;
@@ -8,17 +7,17 @@ interface LandingPageResult {
   companyName?: string;
 }
 
-const app = new App({ name: 'Gemini Landing Page Viewer', version: '1.0.0' });
+function isLandingPageResult(data: unknown): data is LandingPageResult {
+  return !!data && typeof data === 'object' && typeof (data as LandingPageResult).html === 'string'
+    && (data as LandingPageResult).html.length > 0;
+}
 
 let currentHtml = '';
 
-app.ontoolresult = (result: { structuredContent?: LandingPageResult }) => {
-  const data = result.structuredContent;
-  if (!data || !data.html) return;
-  render(data);
-};
-
-app.connect();
+setupApp<LandingPageResult>('Gemini Landing Page Viewer', isLandingPageResult, render, {
+  unavailableMessage:
+    'No page data arrived from the host. The HTML is saved on disk — see the tool result text for its path.',
+});
 
 function render(data: LandingPageResult) {
   const loading = document.getElementById('loading')!;

@@ -309,6 +309,8 @@ Gemini returns 2-5MB images. The resize is smart — it measures the non-image o
 | `GEMINI_DEFAULT_GROUNDING` | No | `true` | Enable Google Search grounding by default |
 | `GEMINI_IMAGE_OUTPUT_DIR` | No | — | Auto-save directory for generated images and videos |
 | `GEMINI_ALLOW_EXPERIMENTAL` | No | `false` | Include experimental/preview models in auto-discovery |
+| `GEMINI_REQUEST_TIMEOUT_MS` | No | `240000` | Per-request timeout for chat and analysis calls, in milliseconds |
+| `GEMINI_MCP_RETRY_ATTEMPTS` | No | `3` | Total attempts per Gemini API request. Transient network failures (`fetch failed`, `ECONNRESET`, proxy or VPN drops) are retried with backoff. Set to `1` to disable |
 | `GEMINI_MCP_LOG_FILE` | No | `false` | Write logs to `~/.gemini-mcp/logs/` |
 | `DEBUG_MCP` | No | `false` | Log to stderr for debugging tool calls |
 

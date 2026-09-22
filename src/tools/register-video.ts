@@ -2,9 +2,10 @@ import * as z from 'zod';
 import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import logger from '../utils/logger.js';
 import { toolError } from '../utils/tool-wrapper.js';
+import { stashViewerPayload, viewerRefLine } from '../utils/viewer-payload-store.js';
 import { GenerateVideoTool } from './generate-video.js';
 import { imageInputSchema } from './schemas.js';
-import { resolveImageInputs, resolveImageInput } from '../utils/resolve-images.js';
+import { resolveImageInput } from '../utils/resolve-images.js';
 import type { ToolContext } from './types.js';
 
 export function register(ctx: ToolContext): void {
@@ -134,6 +135,10 @@ export function register(ctx: ToolContext): void {
           if (thumbUrl) enriched.thumbnailUrl = thumbUrl;
         }
 
+        // Lets the App viewer recover structuredContent on hosts that strip it
+        // (Claude Desktop). See src/utils/viewer-payload-store.ts.
+        const viewerRef = stashViewerPayload(enriched);
+        content.push({ type: 'text' as const, text: viewerRefLine(viewerRef) });
         return {
           content,
           structuredContent: enriched

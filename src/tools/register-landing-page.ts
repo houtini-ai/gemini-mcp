@@ -5,6 +5,7 @@ import { dirname, resolve } from 'path';
 import logger from '../utils/logger.js';
 import { McpError, createToolResult } from '../utils/error-handler.js';
 import { savedFileMessage } from '../utils/tool-wrapper.js';
+import { stashViewerPayload, viewerRefLine } from '../utils/viewer-payload-store.js';
 import { GenerateLandingPageTool } from './generate-landing-page.js';
 import type { ToolContext } from './types.js';
 
@@ -66,17 +67,21 @@ export function register(ctx: ToolContext): void {
 
         logger.info('Landing page saved successfully', { savedPath: absolutePath });
 
+        const structuredContent = {
+          html,
+          savedPath: absolutePath,
+          brief,
+          companyName
+        };
+        // Lets the App viewer recover structuredContent on hosts that strip it
+        // (Claude Desktop). See src/utils/viewer-payload-store.ts.
+        const viewerRef = stashViewerPayload(structuredContent);
         return {
-          structuredContent: {
-            html,
-            savedPath: absolutePath,
-            brief,
-            companyName
-          },
+          structuredContent,
           content: [
             {
               type: 'text' as const,
-              text: `${savedFileMessage('Landing page saved', absolutePath)}\n\nOpen this file in your browser to view the landing page.`
+              text: `${savedFileMessage('Landing page saved', absolutePath)}\n\nOpen this file in your browser to view the landing page.\n${viewerRefLine(viewerRef)}`
             }
           ]
         };

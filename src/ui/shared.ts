@@ -1,4 +1,8 @@
 import { App } from '@modelcontextprotocol/ext-apps';
+import { resolveViewData, textOfContent, type ToolResultLike } from './view-data.js';
+
+export { resolveViewData, extractViewerRef, textOfContent } from './view-data.js';
+export type { ContentBlock, ToolResultLike } from './view-data.js';
 
 /**
  * Shared CSS variables and reset used by all Gemini MCP viewers.
@@ -186,25 +190,77 @@ export const BASE_STYLES = `
   }
 `;
 
+// ─── Tool result → view data ─────────────────────────────────────────────────
+
+export interface SetupAppOptions<T> {
+  /**
+   * Last-resort builder from the plain content blocks, used when neither
+   * structuredContent nor the stashed payload is available.
+   */
+  fromContent?: (result: ToolResultLike) => T | undefined;
+  /** Shown in place of the placeholder when nothing renderable arrives. */
+  unavailableMessage?: string;
+}
+
 /**
- * Set up the MCP App connection and call the provided render function
- * when structured content is received.
+ * Wire an MCP App: connect, resolve the tool result into view data through the
+ * fallbacks in view-data.ts, and render exactly once. When a result arrives
+ * that cannot be rendered, the placeholder is replaced with an explanation
+ * rather than spinning forever. There is deliberately no pre-result timeout:
+ * hosts may mount the widget when the tool starts, and a video takes minutes.
  */
 export function setupApp<T>(
   name: string,
   guard: (data: unknown) => data is T,
   render: (data: T) => void,
-): void {
+  options: SetupAppOptions<T> = {},
+): App {
   const app = new App({ name, version: '1.0.0' });
+  const loading = () => document.getElementById('loading');
+  let settled = false; // a result is being resolved or has been rendered
+  let connected: Promise<unknown> = Promise.resolve();
 
-  app.ontoolresult = (result: { structuredContent?: unknown }) => {
-    const data = result.structuredContent;
-    if (!guard(data)) return;
-    render(data);
+  const unavailable = (message: string) => {
+    const el = loading();
+    if (el) el.textContent = message;
   };
 
-  app.connect();
+  // Handlers must be registered before connect(): the host may deliver the
+  // result as soon as the handshake completes.
+  app.ontoolresult = (result: ToolResultLike) => {
+    if (settled) return;
+    settled = true;
+    if (result.isError) {
+      unavailable(`The tool reported an error:\n${textOfContent(result) || 'see the chat for details.'}`);
+      return;
+    }
+    // .then rather than await: awaiting a generic Promise<T> yields Awaited<T>,
+    // which TypeScript can't unify with the T the render callback expects.
+    resolveViewData(app, connected, result, guard).then(resolved => {
+      const data = resolved ?? options.fromContent?.(result);
+      if (!data) {
+        settled = false; // let a later, complete result still render
+        unavailable(options.unavailableMessage ?? DEFAULT_UNAVAILABLE);
+        return;
+      }
+      render(data);
+    });
+  };
+
+  // Resolve (not reject) on failure: resolveViewData awaits this promise, and a
+  // rejected one would surface as an unhandled rejection when no result comes.
+  connected = app.connect().catch(err => {
+    console.error('[gemini viewer] app.connect() failed', err);
+    unavailable('Could not connect to the host. The file is saved on disk — see the tool result for its path.');
+  });
+
+  return app;
 }
+
+const DEFAULT_UNAVAILABLE =
+  'No preview data arrived from the host. The file is saved on disk — see the tool result text for its path.';
+
+// ─── DOM helpers ─────────────────────────────────────────────────────────────
 
 /**
  * Copy text to clipboard with fallback for sandboxed iframes.

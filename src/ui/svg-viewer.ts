@@ -1,6 +1,5 @@
-import { App } from '@modelcontextprotocol/ext-apps';
 import Panzoom, { type PanzoomObject } from '@panzoom/panzoom';
-import { setupPathCopy, showDescription, showPrompt, showContent } from './shared.js';
+import { setupApp, setupPathCopy, showDescription, showPrompt, showContent } from './shared.js';
 
 interface SVGResult {
   svgContent: string;
@@ -9,15 +8,15 @@ interface SVGResult {
   prompt?: string;
 }
 
-const app = new App({ name: 'Gemini SVG Viewer', version: '1.0.0' });
+function isSVGResult(data: unknown): data is SVGResult {
+  return !!data && typeof data === 'object' && typeof (data as SVGResult).svgContent === 'string'
+    && (data as SVGResult).svgContent.length > 0;
+}
 
-app.ontoolresult = (result: { structuredContent?: SVGResult }) => {
-  const data = result.structuredContent;
-  if (!data || !data.svgContent) return;
-  render(data);
-};
-
-app.connect();
+setupApp<SVGResult>('Gemini SVG Viewer', isSVGResult, render, {
+  unavailableMessage:
+    'No SVG data arrived from the host. The SVG is saved on disk — see the tool result text for its path.',
+});
 
 function render(data: SVGResult) {
   const loading = document.getElementById('loading')!;

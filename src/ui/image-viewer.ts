@@ -1,6 +1,8 @@
-import { App } from '@modelcontextprotocol/ext-apps';
 import Panzoom, { type PanzoomObject } from '@panzoom/panzoom';
-import { setupPathCopy, showDescription, showPrompt, showContent } from './shared.js';
+import {
+  setupApp, setupPathCopy, showDescription, showPrompt, showContent, textOfContent,
+  type ToolResultLike,
+} from './shared.js';
 
 interface ImageResult {
   imageUrl?: string;
@@ -11,16 +13,30 @@ interface ImageResult {
   prompt?: string;
 }
 
-const app = new App({ name: 'Gemini Image Viewer', version: '1.0.0' });
+function isImageResult(data: unknown): data is ImageResult {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as ImageResult;
+  return !!(d.imageUrl || d.base64Data || d.savedPath);
+}
 
-app.ontoolresult = (result: { structuredContent?: ImageResult }) => {
-  const data = result.structuredContent;
-  if (!data) return;
-  // Render if we have any image source (URL, base64, or file path)
-  if (data.imageUrl || data.base64Data || data.savedPath) render(data);
-};
+/**
+ * Last resort when the host delivered neither structuredContent nor a usable
+ * viewer ref: the inline preview (≤800px JPEG) is always in the content
+ * blocks, and the saved path is in the text block.
+ */
+function fromContent(result: ToolResultLike): ImageResult | undefined {
+  const image = result.content?.find(b => b.type === 'image' && b.data);
+  if (!image?.data) return undefined;
+  const text = textOfContent(result);
+  const savedPath = /Image saved \(full-res\): (.+)/.exec(text)?.[1]?.trim();
+  return { base64Data: image.data, mimeType: image.mimeType || 'image/jpeg', savedPath };
+}
 
-app.connect();
+setupApp<ImageResult>('Gemini Image Viewer', isImageResult, render, {
+  fromContent,
+  unavailableMessage:
+    'No image data arrived from the host. The full-resolution file is saved on disk — see the tool result text for its path.',
+});
 
 function render(data: ImageResult) {
   const loading = document.getElementById('loading')!;
@@ -39,7 +55,7 @@ function render(data: ImageResult) {
   const imageDimsEl = document.getElementById('image-dims')!;
 
   // Prefer media server URL (full-res, bypasses MCP limits) over inline base64.
-  // base64Data is intentionally kept empty to avoid exceeding the 1MB MCP transport limit.
+  // base64Data only appears on the content-block fallback path.
   if (data.imageUrl) {
     img.src = data.imageUrl;
   } else if (data.base64Data && data.mimeType) {

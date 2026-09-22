@@ -1,6 +1,7 @@
 import { GeminiConfig } from '../../config/types.js';
 import { GeminiError } from '../../utils/error-handler.js';
 import { BaseService } from '../base-service.js';
+import { fetchWithRetry as fetchWithNetworkRetry } from '../../utils/fetch-retry.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -138,6 +139,7 @@ export class GeminiVideoService extends BaseService {
   private outputDir: string;
   private pollingIntervalMs: number;
   private maxPollingTimeMs: number;
+  private retryAttempts: number;
 
   constructor(config: GeminiConfig, outputDir?: string) {
     super();
@@ -145,6 +147,7 @@ export class GeminiVideoService extends BaseService {
       throw new GeminiError('Missing API key for Gemini video service');
     }
     this.apiKey = config.apiKey;
+    this.retryAttempts = config.retryAttempts;
     this.defaultModel = DEFAULT_VIDEO_MODEL;
     this.outputDir = outputDir || './output';
     
@@ -173,10 +176,16 @@ export class GeminiVideoService extends BaseService {
     let lastError: Error | undefined;
 
     for (let attempt = 0; attempt <= MAX_429_RETRIES; attempt++) {
-      const response = await fetch(url, {
+      // Connection-level failures (proxy/VPN drops) are replayed by the shared
+      // helper; the 429 loop below handles rate limits with a longer backoff.
+      const response = await fetchWithNetworkRetry(url, {
         ...init,
         // A stalled connection must not hang the tool call indefinitely.
         signal: init?.signal ?? AbortSignal.timeout(HTTP_REQUEST_TIMEOUT_MS),
+      }, {
+        attempts: this.retryAttempts,
+        label,
+        onRetry: info => this.logWarning(`Retrying ${info.reason}`, { attempt: info.attempt, attempts: info.attempts, delayMs: info.delayMs }),
       });
 
       if (response.status !== 429) {

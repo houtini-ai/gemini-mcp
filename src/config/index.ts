@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { Config } from './types.js';
 import * as dotenv from 'dotenv';
+import { normalizeRetryAttempts } from '../utils/fetch-retry.js';
 
 dotenv.config();
 
@@ -43,7 +44,10 @@ export const config: Config = {
     temperature: 1.0,
     defaultGrounding: true,
     allowExperimentalModels: process.env.GEMINI_ALLOW_EXPERIMENTAL === 'true',
-    requestTimeoutMs: Number(process.env.GEMINI_REQUEST_TIMEOUT_MS) || 240000
+    requestTimeoutMs: Number(process.env.GEMINI_REQUEST_TIMEOUT_MS) || 240000,
+    // Transient network failures (proxy/VPN/WSL2 drops) are replayed up to this
+    // many total attempts per request. See src/utils/fetch-retry.ts and issue #8.
+    retryAttempts: normalizeRetryAttempts(process.env.GEMINI_MCP_RETRY_ATTEMPTS)
   },
   server: {
     name: 'gemini-mcp',

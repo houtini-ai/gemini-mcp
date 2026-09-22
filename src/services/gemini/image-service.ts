@@ -1,6 +1,7 @@
 import { GeminiConfig } from '../../config/types.js';
 import { GeminiError } from '../../utils/error-handler.js';
 import { BaseService } from '../base-service.js';
+import { fetchWithRetry } from '../../utils/fetch-retry.js';
 import { GeneratedImageResult, ImageResponsePart } from './types.js';
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -132,6 +133,7 @@ export class GeminiImageService extends BaseService {
   private apiKey: string;
   private defaultGenerationModel: string;
   private defaultDescribeModel: string;
+  private retryAttempts: number;
 
   constructor(config: GeminiConfig) {
     super();
@@ -139,9 +141,29 @@ export class GeminiImageService extends BaseService {
       throw new GeminiError('Missing API key for Gemini image service');
     }
     this.apiKey = config.apiKey;
+    this.retryAttempts = config.retryAttempts;
     this.defaultGenerationModel = config.defaultImageGenerationModel || DEFAULT_IMAGE_GENERATION_MODEL;
     this.defaultDescribeModel = config.defaultImageDescribeModel || DEFAULT_IMAGE_DESCRIBE_MODEL;
     this.logInfo('Gemini image service initialised');
+  }
+
+  /**
+   * POST a generateContent request. Key goes in a header (not ?key= — avoids
+   * intermediary URL logging); an AbortSignal stops a stalled response hanging
+   * the tool call; transient connection failures are replayed (see #8).
+   */
+  private postGenerateContent(model: string, body: unknown, label: string): Promise<Response> {
+    const url = `${GEMINI_API_BASE}/${model}:generateContent`;
+    return fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(IMAGE_REQUEST_TIMEOUT_MS),
+    }, {
+      attempts: this.retryAttempts,
+      label,
+      onRetry: info => this.logWarning(`Retrying ${info.reason}`, { attempt: info.attempt, attempts: info.attempts, delayMs: info.delayMs }),
+    });
   }
 
   private validateModel(model: string, operation: 'generation' | 'vision' = 'generation'): void {
@@ -233,15 +255,7 @@ export class GeminiImageService extends BaseService {
       globalMediaResolution: options.globalMediaResolution
     });
 
-    // Key in header (not ?key= query param — avoids intermediary URL logging);
-    // AbortSignal so a stalled response can't hang the tool call forever.
-    const url = `${GEMINI_API_BASE}/${model}:generateContent`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(IMAGE_REQUEST_TIMEOUT_MS),
-    });
+    const response = await this.postGenerateContent(model, body, 'image generation');
 
     if (!response.ok) {
       const text = await response.text();
@@ -355,15 +369,7 @@ export class GeminiImageService extends BaseService {
       globalMediaResolution: options.globalMediaResolution
     });
 
-    // Key in header (not ?key= query param — avoids intermediary URL logging);
-    // AbortSignal so a stalled response can't hang the tool call forever.
-    const url = `${GEMINI_API_BASE}/${model}:generateContent`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(IMAGE_REQUEST_TIMEOUT_MS),
-    });
+    const response = await this.postGenerateContent(model, body, 'image description');
 
     if (!response.ok) {
       const text = await response.text();

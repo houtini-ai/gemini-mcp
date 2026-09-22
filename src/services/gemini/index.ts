@@ -7,9 +7,9 @@ import {
   ChatResponse, 
   ListModelsResponse, 
   ModelInfo,
-  GeminiGenerationConfig 
 } from './types.js';
 import { GeminiError } from '../../utils/error-handler.js';
+import { fetchWithRetry, retryOnTransient } from '../../utils/fetch-retry.js';
 import { GeminiVideoService, GenerateVideoOptions, GeneratedVideoResult } from './video-service.js';
 
 // Gemini 3+ models require temperature 1.0.
@@ -61,12 +61,27 @@ export class GeminiService extends BaseService {
       throw new GeminiError('Missing API key for Gemini service');
     }
     
+    // Deliberately no httpOptions.retryOptions: the SDK's retry loop replaces
+    // every non-retryable ApiError (status + API message, e.g. "API key not
+    // valid") with an opaque 'Non-retryable exception' string. Transient
+    // network failures are replayed by withRetry() around each call instead.
     this.genAI = new GoogleGenAI({ apiKey: config.apiKey });
     this.defaultModel = config.defaultModel;
     this.availableModels = this.getFallbackModels();
     this.videoService = new GeminiVideoService(config, outputDir);
     
     this.logInfo('Gemini service initialized');
+  }
+
+  /** Replay an SDK call on transient network failures (proxy/VPN drops). See #8. */
+  private withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    return retryOnTransient(fn, {
+      attempts: this.config.retryAttempts,
+      label,
+      onRetry: info => this.logWarning(`Retrying ${info.reason}`, {
+        attempt: info.attempt, attempts: info.attempts, delayMs: info.delayMs,
+      }),
+    });
   }
 
   private async ensureModelsInitialized(): Promise<void> {
@@ -107,12 +122,13 @@ export class GeminiService extends BaseService {
 
   private async fetchModelsFromAPI(): Promise<ModelInfo[]> {
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         'https://generativelanguage.googleapis.com/v1beta/models',
         {
           headers: { 'x-goog-api-key': this.config.apiKey },
           signal: AbortSignal.timeout(15_000),
-        }
+        },
+        { attempts: this.config.retryAttempts, label: 'list models', onRetry: info => this.logWarning(`Retrying ${info.reason}`, { attempt: info.attempt, attempts: info.attempts, delayMs: info.delayMs }) }
       );
 
       if (!response.ok) {
@@ -365,11 +381,11 @@ export class GeminiService extends BaseService {
       }
 
       const response = await withTimeout(
-        this.genAI.models.generateContent({
+        this.withRetry(`gemini_chat (${modelName})`, () => this.genAI.models.generateContent({
           model: modelName,
           contents: request.message,
           config,
-        }),
+        })),
         this.config.requestTimeoutMs,
         `gemini_chat (${modelName})`
       );
@@ -574,11 +590,11 @@ export class GeminiService extends BaseService {
       const contents: Content[] = [{ role: 'user', parts }];
 
       const response = await withTimeout(
-        this.genAI.models.generateContent({
+        this.withRetry(`analyze_image (${modelName})`, () => this.genAI.models.generateContent({
           model: modelName,
           contents,
           config,
-        }),
+        })),
         this.config.requestTimeoutMs,
         `analyze_image (${modelName})`
       );

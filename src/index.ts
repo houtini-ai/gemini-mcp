@@ -25,6 +25,7 @@ import { register as registerImageGen } from './tools/register-image-gen.js';
 import { register as registerLandingPage } from './tools/register-landing-page.js';
 import { register as registerSvg } from './tools/register-svg.js';
 import { register as registerVideo } from './tools/register-video.js';
+import { register as registerViewerPayload } from './tools/register-viewer-payload.js';
 
 import type { ToolContext } from './tools/types.js';
 
@@ -37,6 +38,7 @@ const TOOL_NAMES = [
   'generate_video',
   'load_image_from_path', 'generate_landing_page', 'generate_svg',
   'gemini_help', 'gemini_prompt_assistant',
+  'gemini_viewer_payload',
 ] as const;
 
 class GeminiMcpServer {
@@ -108,6 +110,7 @@ class GeminiMcpServer {
       registerLandingPage(ctx);
       registerSvg(ctx);
       registerVideo(ctx);
+      registerViewerPayload(ctx);
 
       logger.info('Tools registered', {
         toolCount: TOOL_NAMES.length,
