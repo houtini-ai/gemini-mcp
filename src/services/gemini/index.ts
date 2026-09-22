@@ -15,15 +15,11 @@ import { GeminiVideoService, GenerateVideoOptions, GeneratedVideoResult } from '
 // Gemini 3+ models require temperature 1.0.
 // Google's docs warn lower values cause looping or degraded reasoning.
 // Gemini 3 also supports thinkingConfig.thinkingLevel.
-const GEMINI3_MODEL_PREFIXES = [
-  'gemini-3-pro',
-  'gemini-3-flash',
-  'gemini-3-pro-image',
-  'gemini-3.1-pro',
-];
-
+// Matches every 3.x+ model (3-pro, 3.1-pro, 3.5-flash, 3.8-flash, ...) rather
+// than a hand-kept prefix list that silently missed each new Flash release.
 function isGemini3(modelName: string): boolean {
-  return GEMINI3_MODEL_PREFIXES.some(prefix => modelName.startsWith(prefix));
+  const match = /^gemini-(\d+)/.exec(modelName);
+  return !!match && Number(match[1]) >= 3;
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {

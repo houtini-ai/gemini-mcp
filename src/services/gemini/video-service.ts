@@ -8,7 +8,8 @@ import path from 'path';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const VIDEO_GENERATION_MODELS = [
-  'veo-3.1-generate-preview',
+  'veo-3.1-generate-preview',       // default — cinematic, native audio, up to 4K
+  'veo-3.1-lite-generate-preview',  // cheaper/faster, same API
 ] as const;
 
 export type VideoModel = typeof VIDEO_GENERATION_MODELS[number];

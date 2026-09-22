@@ -30,7 +30,7 @@ export function register(ctx: ToolContext): void {
           .optional()
           .describe(
             'Omit to use the configured default (gemini-3.1-pro-preview). ' +
-            'Other valid options: gemini-3-pro-preview, gemini-3-flash-preview. ' +
+            'Other valid options: gemini-3.8-flash (GA, fast), gemini-3.5-flash, gemini-3-pro-preview, gemini-3-flash-preview. ' +
             'Do NOT pass gemini-1.5-* or gemini-pro — those are out of support.'
           ),
         temperature: z.number()

@@ -9,19 +9,35 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models
 /** Image generation with reference images can legitimately take minutes. */
 const IMAGE_REQUEST_TIMEOUT_MS = 300_000;
 
+// Checked against the live models API and ai.google.dev/gemini-api/docs/models
+// on 2026-09-22. Preview IDs stay accepted so existing configs keep working.
 export const IMAGE_GENERATION_MODELS = [
-  'gemini-3-pro-image-preview',  // Nano Banana Pro — Gemini 3 image model, default for generation
-  'gemini-2.5-flash-image',      // Gemini 2.5 Flash image generation (stable alias)
-  'nano-banana-pro-preview',     // API alias for gemini-3-pro-image-preview
+  'gemini-3-pro-image',            // Nano Banana Pro (GA) — default: 4K, reasoning, conversational editing
+  'gemini-3.1-flash-image',        // Nano Banana 2 (GA) — near-Pro quality at Flash speed and price
+  'gemini-3.1-flash-lite-image',   // Nano Banana 2 Lite (GA) — fastest, cheapest, bulk work
+  'gemini-3-pro-image-preview',    // Nano Banana Pro preview ID (still served)
+  'gemini-3.1-flash-image-preview',
+  'nano-banana-pro-preview',       // API alias for gemini-3-pro-image-preview
+  'gemini-2.5-flash-image',        // Nano Banana (2.5) — legacy
 ] as const;
 
 // Models valid for describe_image and analyze_image (text output, multimodal input)
 export const IMAGE_VISION_MODELS = [
-  'gemini-3-flash-preview',
+  'gemini-3.8-flash',              // GA workhorse — default for describe_image
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.1-pro-preview',        // strongest reasoning — default for analyze_image
   'gemini-3-pro-preview',
-  'gemini-3.1-pro-preview',
-  'gemini-3-pro-image-preview',  // also supports vision
+  'gemini-3-flash-preview',
+  'gemini-3-pro-image',            // image models also accept vision input
+  'gemini-3-pro-image-preview',
+  'gemini-3.1-flash-image',
   'gemini-2.5-flash-image',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
 ] as const;
 
 // Combined set for backwards compat — keep IMAGE_MODELS as an alias
@@ -31,8 +47,8 @@ export const IMAGE_MODELS = [
 ] as const;
 
 export type ImageModel = typeof IMAGE_GENERATION_MODELS[number];
-const DEFAULT_IMAGE_GENERATION_MODEL: ImageModel = 'gemini-3-pro-image-preview';
-const DEFAULT_IMAGE_DESCRIBE_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_IMAGE_GENERATION_MODEL: ImageModel = 'gemini-3-pro-image';
+const DEFAULT_IMAGE_DESCRIBE_MODEL = 'gemini-3.8-flash';
 
 export type AspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
 export type ImageSize = '1K' | '2K' | '4K';

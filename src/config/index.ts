@@ -38,11 +38,11 @@ export const config: Config = {
     defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-3.1-pro-preview',                // chat / text
     defaultDeepResearchModel: process.env.GEMINI_DEEP_RESEARCH_MODEL || 'gemini-3.1-pro-preview',  // deep_research
     defaultImageAnalysisModel: process.env.GEMINI_IMAGE_ANALYSIS_MODEL || 'gemini-3.1-pro-preview', // analyze_image
-    defaultImageDescribeModel: process.env.GEMINI_IMAGE_DESCRIBE_MODEL || 'gemini-3-flash-preview', // describe_image (lighter task)
-    defaultImageGenerationModel: process.env.GEMINI_IMAGE_GENERATION_MODEL || 'gemini-3-pro-image-preview', // generate_image / edit_image
+    defaultImageDescribeModel: process.env.GEMINI_IMAGE_DESCRIBE_MODEL || 'gemini-3.8-flash',        // describe_image (lighter task; GA Flash)
+    defaultImageGenerationModel: process.env.GEMINI_IMAGE_GENERATION_MODEL || 'gemini-3-pro-image',   // generate_image / edit_image (Nano Banana Pro, GA)
     maxTokens: 65536,
     temperature: 1.0,
-    defaultGrounding: true,
+    defaultGrounding: process.env.GEMINI_DEFAULT_GROUNDING !== 'false',
     allowExperimentalModels: process.env.GEMINI_ALLOW_EXPERIMENTAL === 'true',
     requestTimeoutMs: Number(process.env.GEMINI_REQUEST_TIMEOUT_MS) || 240000,
     // Transient network failures (proxy/VPN/WSL2 drops) are replayed up to this

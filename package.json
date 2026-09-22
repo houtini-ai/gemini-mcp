@@ -1,6 +1,6 @@
 {
   "name": "@houtini/gemini-mcp",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "mcpName": "io.github.houtini-ai/gemini",
   "type": "module",
   "description": "Gemini MCP server for Claude - image generation, video, SVG and Google Search grounding. Nano Banana Pro, Veo 3.1 and Gemini 3.1 Pro as tools.",

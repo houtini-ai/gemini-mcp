@@ -10,10 +10,10 @@ export function register(ctx: ToolContext): void {
   ctx.server.registerTool(
     'describe_image',
     {
-      title: 'Describe Image (Nano Banana Pro)',
+      title: 'Describe Image (Gemini Flash)',
       description:
-        'Analyze and describe one or more images using Google Gemini image models (Nano Banana Pro). ' +
-        'Returns a text description — no image is generated. Default model: gemini-3-flash-preview. ' +
+        'Analyze and describe one or more images using Gemini multimodal understanding. ' +
+        'Returns a text description — no image is generated. Default model: gemini-3.8-flash. ' +
         '[MCP_RECOMMENDED_TIMEOUT_MS: 180000]',
       inputSchema: {
         images: z.array(imageInputSchema)
@@ -25,8 +25,8 @@ export function register(ctx: ToolContext): void {
         model: z.string()
           .optional()
           .describe(
-            'Omit to use gemini-3-flash-preview. ' +
-            'Other valid options: gemini-3-pro-preview, gemini-3.1-pro-preview. ' +
+            'Omit to use gemini-3.8-flash (GA, fast). ' +
+            'Other valid options: gemini-3.1-pro-preview (deeper analysis), gemini-3.5-flash, gemini-3-flash-preview. ' +
             'Do NOT pass gemini-1.5-* or gemini-pro-vision — those are out of support.'
           ),
         global_media_resolution: z.enum([

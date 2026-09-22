@@ -117,13 +117,14 @@ export function register(ctx: ToolContext): void {
       description:
         'Generate an image using Google Gemini image models (Nano Banana Pro). ' +
         'Returns image with inline preview in Claude Desktop and saves full-resolution to disk. ' +
-        'Default model: gemini-3-pro-image-preview.',
+        'Default model: gemini-3-pro-image (Nano Banana Pro).',
       inputSchema: {
         prompt: z.string().describe('Description of the image to generate'),
         model: z.string()
           .optional()
-          .describe('Gemini image model to use (default: gemini-3-pro-image-preview). ' +
-            'Options: gemini-3-pro-image-preview, gemini-2.5-flash-image, nano-banana-pro-preview'),
+          .describe('Gemini image model to use (default: gemini-3-pro-image, Nano Banana Pro). ' +
+            'Options: gemini-3.1-flash-image (Nano Banana 2 — fast), gemini-3.1-flash-lite-image (fastest/cheapest), ' +
+            'gemini-3-pro-image-preview, gemini-2.5-flash-image'),
         aspectRatio: z.enum(['1:1', '3:4', '4:3', '9:16', '16:9'])
           .optional()
           .default('1:1')
@@ -245,7 +246,7 @@ export function register(ctx: ToolContext): void {
           .describe('One or more images to edit'),
         model: z.string()
           .optional()
-          .describe('Gemini image model to use (default: gemini-3-pro-image-preview)'),
+          .describe('Gemini image model to use (default: gemini-3-pro-image, Nano Banana Pro). Also: gemini-3.1-flash-image (Nano Banana 2)'),
         use_search: z.boolean()
           .optional()
           .default(false)

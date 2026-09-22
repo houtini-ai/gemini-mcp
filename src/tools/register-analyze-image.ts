@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { config } from '../config/index.js';
 import logger from '../utils/logger.js';
 import { createToolResult } from '../utils/error-handler.js';
 import { toolError } from '../utils/tool-wrapper.js';
@@ -16,7 +17,7 @@ export function register(ctx: ToolContext): void {
       description:
         'Analyze and extract information from one or more images using Gemini multimodal understanding. ' +
         'Returns a text analysis - no image is generated. ' +
-        'Default model: gemini-3-pro-preview. ' +
+        'Default model: gemini-3.1-pro-preview. ' +
         'DO NOT SET max_tokens - the server allocates the model\'s full output ' +
         'ceiling automatically; a small cap is spent on Gemini 3 thinking and ' +
         'returns empty output that looks like a timeout. ' +
@@ -30,8 +31,8 @@ export function register(ctx: ToolContext): void {
         model: z.string()
           .optional()
           .describe(
-            'Omit to use gemini-3-pro-preview. ' +
-            'Other valid options: gemini-3.1-pro-preview, gemini-3-flash-preview. ' +
+            'Omit to use gemini-3.1-pro-preview (strongest reasoning). ' +
+            'Other valid options: gemini-3.8-flash (fast, GA), gemini-3-pro-preview, gemini-3-flash-preview. ' +
             'Do NOT pass gemini-1.5-* or gemini-pro-vision — those are out of support.'
           ),
         max_tokens: z.number()
@@ -71,7 +72,7 @@ export function register(ctx: ToolContext): void {
         const result = await ctx.geminiService.analyzeImages({
           images: resolved as any,
           prompt,
-          model: model || 'gemini-3-pro-preview',
+          model: model || config.gemini.defaultImageAnalysisModel,
           // Floor tiny caller budgets (see register-chat) — below 4096 the cap
           // is dropped so the service resolves the model's full headroom.
           maxTokens: max_tokens !== undefined && max_tokens < 4096 ? undefined : max_tokens,

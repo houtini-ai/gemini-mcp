@@ -45,11 +45,13 @@ generate_image(
 **prompt** (required)
 Description of the image to generate. Be specific and detailed.
 
-**model** (optional, default: "gemini-3-pro-image-preview")
+**model** (optional, default: "gemini-3-pro-image")
 Options:
-• gemini-3-pro-image-preview - Best quality, conversational editing support
-• gemini-2.5-flash-image - Stable, fast generation
-• nano-banana-pro-preview - Alias for gemini-3-pro-image-preview
+• gemini-3-pro-image - Nano Banana Pro (GA). Best quality, 4K, conversational editing
+• gemini-3.1-flash-image - Nano Banana 2 (GA). Near-Pro quality at Flash speed and price
+• gemini-3.1-flash-lite-image - Nano Banana 2 Lite (GA). Fastest and cheapest, bulk work
+• gemini-3-pro-image-preview / nano-banana-pro-preview - Older preview IDs, still served
+• gemini-2.5-flash-image - Legacy Nano Banana
 
 **aspectRatio** (optional, default: "1:1")
 Options: "1:1", "3:4", "4:3", "9:16", "16:9"
@@ -115,7 +117,7 @@ One or more images to edit. Each image object:
 • thoughtSignature: (optional) For conversational editing
 • mediaResolution: (optional) Per-image quality override
 
-**model** (optional, default: "gemini-3-pro-image-preview")
+**model** (optional, default: "gemini-3-pro-image")
 Same options as generate_image
 
 **use_search** (optional, default: false)
@@ -129,7 +131,7 @@ Token cost optimization. See \`gemini_help topic="media_resolution"\`
 Custom save location for edited image
 
 ### Conversational Editing
-For multi-step refinements with gemini-3-pro-image-preview:
+For multi-step refinements with gemini-3-pro-image (Nano Banana Pro):
 1. First edit returns thoughtSignature
 2. Pass thoughtSignature in subsequent edits
 3. Model maintains visual context across iterations
@@ -205,7 +207,7 @@ For PDFs, use MEDIUM resolution:
 \`\`\`
 gemini_chat(
   message="Explain quantum entanglement",
-  model="gemini-3-pro-preview"
+  model="gemini-3.8-flash"
 )
 \`\`\`
 
@@ -427,52 +429,60 @@ Start with MEDIUM, only increase if quality insufficient`,
 
   models: `# Gemini Models Reference
 
+Checked against the live models API on 2026-09-22. Run gemini_list_models for
+what your key can see today.
+
 ## Chat Models
 
-**Gemini 3 Series (Latest)**
-• gemini-3-pro-preview - Best reasoning, supports thinking levels
-• gemini-3-flash-preview - Fast, supports thinking levels
-• gemini-3.1-pro-preview - Enhanced reasoning
-• gemini-3.1-pro-preview-customtools - Optimized for tool use
+**Gemini 3.x Pro (preview - strongest reasoning)**
+• gemini-3.1-pro-preview - Default for gemini_chat, gemini_deep_research, analyze_image
+• gemini-3.1-pro-preview-customtools - Tool-use tuned variant
+• gemini-3-pro-preview - Previous Pro preview
 
-**Gemini 2.5 Series (Stable)**
-• gemini-2.5-pro - Stable flagship model
-• gemini-2.5-flash - Stable fast model
-• gemini-2.5-flash-lite - Lightweight, efficient
+**Gemini 3.x Flash (GA)**
+• gemini-3.8-flash - Current workhorse (GA Sept 2026). Default for describe_image
+• gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash - Earlier GA Flash releases
+• gemini-3.5-flash-lite, gemini-3.1-flash-lite - Cheapest 3.x options
+• gemini-3-flash-preview - Older preview, still served
 
-**Gemini 2.0 Series**
-• gemini-2.0-flash - Versatile multimodal
-• gemini-2.0-flash-001 - Stable version
-• gemini-2.0-flash-lite - Lightweight variant
+**Gemini 2.5 Series (legacy, limited access)**
+• gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite
 
 **Aliases**
-• gemini-flash-latest - Latest Flash release
-• gemini-pro-latest - Latest Pro release
+• gemini-flash-latest / gemini-pro-latest - Always the newest release
+
+All Gemini 3.x models run at temperature 1.0 (Google's requirement) and
+support thinking_level.
 
 ## Image Generation Models
 
-**gemini-3-pro-image-preview** (Nano Banana Pro)
-• Best quality image generation
-• Supports conversational editing via thoughtSignatures
+**gemini-3-pro-image** (Nano Banana Pro, GA)
+• Best quality, 4K, real text rendering, search grounding
+• Conversational editing via thoughtSignatures
 • Default for generate_image and edit_image
 
-**gemini-2.5-flash-image**
-• Stable image generation
-• Fast, reliable
-• No conversational editing
+**gemini-3.1-flash-image** (Nano Banana 2, GA)
+• Near-Pro quality at Flash speed and price
+• Good default for volume work
 
-**nano-banana-pro-preview**
-• Alias for gemini-3-pro-image-preview
+**gemini-3.1-flash-lite-image** (Nano Banana 2 Lite, GA)
+• Fastest and cheapest
+
+**gemini-3-pro-image-preview / nano-banana-pro-preview / gemini-2.5-flash-image**
+• Older IDs, still accepted
 
 ## Image Analysis Models
 
-All chat models support image analysis via:
-• describe_image
-• analyze_image
+Any chat model works for describe_image and analyze_image.
 
 Recommended:
-• gemini-3-flash-preview (default) - Fast, accurate
-• gemini-3-pro-preview - Best quality analysis
+• gemini-3.8-flash (describe_image default) - Fast, accurate, GA
+• gemini-3.1-pro-preview (analyze_image default) - Deepest analysis
+
+## Video Models
+
+• veo-3.1-generate-preview (default) - Cinematic, native audio, up to 4K
+• veo-3.1-lite-generate-preview - Cheaper and faster, same API
 
 ## Specialized Models
 
@@ -489,13 +499,14 @@ Recommended:
 ## Model Selection Tips
 
 **For Chat:**
-• Quick questions: gemini-3-flash-preview
-• Complex reasoning: gemini-3-pro-preview
-• Stable production: gemini-2.5-pro
+• Quick questions: gemini-3.8-flash
+• Complex reasoning: gemini-3.1-pro-preview
+• Cheapest: gemini-3.5-flash-lite
 
 **For Images:**
-• Generation: gemini-3-pro-image-preview (only one with editing)
-• Analysis: gemini-3-flash-preview (fast, accurate)
+• Best quality / editing: gemini-3-pro-image
+• Fast and cheap: gemini-3.1-flash-image
+• Analysis: gemini-3.8-flash (fast) or gemini-3.1-pro-preview (deep)
 
 **For Research:**
 • deep-research-pro-preview-12-2025

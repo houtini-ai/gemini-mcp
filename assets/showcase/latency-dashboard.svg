@@ -1,0 +1,77 @@
+<svg width="1200" height="700" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg">
+  <title>API Latency Dashboard</title>
+  <desc>Grouped bar chart showing API latency by region: London, Frankfurt, Virginia, and Singapore.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #ffffff; }
+    .label { fill: #9ca3af; font-size: 14px; }
+    .grid { stroke: #374151; stroke-width: 1; stroke-dasharray: 4; }
+    .title { font-size: 28px; font-weight: 600; }
+    .footer { fill: #9ca3af; font-size: 16px; font-style: italic; }
+    .region { font-size: 18px; font-weight: 500; text-anchor: middle; }
+    .p50 { fill: #6366f1; }
+    .p95 { fill: #14b8a6; }
+    .p99 { fill: #f59e0b; }
+    .spark { fill: none; stroke-width: 2; stroke-linejoin: round; }
+  </style>
+
+  <rect width="1200" height="700" fill="#1a1a1a" />
+
+  <text x="50" y="60" class="title">API latency by region, last 7 days</text>
+  
+  <g id="grid">
+    <line x1="100" y1="550" x2="1100" y2="550" stroke="#374151" stroke-width="2" />
+    <line x1="100" y1="470" x2="1100" y2="470" class="grid" />
+    <line x1="100" y1="390" x2="1100" y2="390" class="grid" />
+    <line x1="100" y1="310" x2="1100" y2="310" class="grid" />
+    <line x1="100" y1="230" x2="1100" y2="230" class="grid" />
+    <line x1="100" y1="150" x2="1100" y2="150" class="grid" />
+    <g class="label" text-anchor="end">
+      <text x="90" y="555">0</text>
+      <text x="90" y="475">100</text>
+      <text x="90" y="395">200</text>
+      <text x="90" y="315">300</text>
+      <text x="90" y="235">400</text>
+      <text x="90" y="155">500 ms</text>
+    </g>
+  </g>
+
+  <g id="bars-london" transform="translate(180, 0)">
+    <rect x="0" y="514" width="35" height="36" class="p50" rx="2" />
+    <rect x="40" y="454" width="35" height="96" class="p95" rx="2" />
+    <rect x="80" y="406" width="35" height="144" class="p99" rx="2" />
+    <text x="57" y="585" class="region">London</text>
+    <path d="M0,620 L20,615 L40,625 L60,610 L80,618 L100,612 L115,615" class="spark" stroke="#6366f1" />
+  </g>
+
+  <g id="bars-frankfurt" transform="translate(430, 0)">
+    <rect x="0" y="508" width="35" height="42" class="p50" rx="2" />
+    <rect x="40" y="442" width="35" height="108" class="p95" rx="2" />
+    <rect x="80" y="382" width="35" height="168" class="p99" rx="2" />
+    <text x="57" y="585" class="region">Frankfurt</text>
+    <path d="M0,615 L20,622 L40,612 L60,618 L80,610 L100,615 L115,612" class="spark" stroke="#14b8a6" />
+  </g>
+
+  <g id="bars-virginia" transform="translate(680, 0)">
+    <rect x="0" y="462" width="35" height="88" class="p50" rx="2" />
+    <rect x="40" y="358" width="35" height="192" class="p95" rx="2" />
+    <rect x="80" y="294" width="35" height="256" class="p99" rx="2" />
+    <text x="57" y="585" class="region">Virginia</text>
+    <path d="M0,625 L20,618 L40,620 L60,605 L80,615 L100,622 L115,628" class="spark" stroke="#f59e0b" />
+  </g>
+
+  <g id="bars-singapore" transform="translate(930, 0)">
+    <rect x="0" y="406" width="35" height="144" class="p50" rx="2" />
+    <rect x="40" y="302" width="35" height="248" class="p95" rx="2" />
+    <rect x="80" y="222" width="35" height="328" class="p99" rx="2" />
+    <text x="57" y="585" class="region">Singapore</text>
+    <path d="M0,610 L20,615 L40,612 L60,625 L80,620 L100,615 L115,610" class="spark" stroke="#ffffff" />
+  </g>
+
+  <g id="legend" transform="translate(850, 40)">
+    <rect width="15" height="15" class="p50" /> <text x="25" y="13" class="label">p50</text>
+    <rect x="80" width="15" height="15" class="p95" /> <text x="105" y="13" class="label">p95</text>
+    <rect x="160" width="15" height="15" class="p99" /> <text x="185" y="13" class="label">p99</text>
+  </g>
+
+  <text x="50" y="670" class="footer">Note: p99 above 300 ms triggers an alert</text>
+</svg>

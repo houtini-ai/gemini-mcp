@@ -1,0 +1,66 @@
+<svg viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg">
+  <title>Gemini MCP Architecture Diagram</title>
+  <desc>Architecture showing Claude Desktop connected to a Gemini MCP Server with tools, Google Gemini API, and a media server.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+    </marker>
+    <style>
+      text { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; fill: #0c4a6e; }
+      .box { fill: #f0f9ff; stroke: #0369a1; stroke-width: 2; rx: 8; }
+      .tool-sep { stroke: #bae6fd; stroke-width: 1; }
+      .label { font-size: 14px; fill: #64748b; font-weight: 500; }
+      .heading { font-size: 18px; font-weight: bold; }
+      .tool-text { font-size: 15px; }
+      .arrow-line { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrow); marker-start: url(#arrow); }
+      .one-way { marker-start: none; }
+    </style>
+  </defs>
+
+  <!-- Boxes -->
+  <rect x="50" y="150" width="220" height="280" class="box" />
+  <rect x="420" y="80" width="360" height="420" class="box" />
+  <rect x="900" y="100" width="260" height="180" class="box" rx="50" /> <!-- API Cloud -->
+  <rect x="915" y="300" width="230" height="60" class="box" style="fill: #f8fafc; stroke: #94a3b8;" />
+  <rect x="450" y="560" width="300" height="80" class="box" style="stroke-dasharray: 4;" />
+
+  <!-- Tool Separators -->
+  <g class="tool-sep">
+    <line x1="420" y1="210" x2="780" y2="210" />
+    <line x1="420" y1="300" x2="780" y2="300" />
+    <line x1="420" y1="395" x2="780" y2="395" />
+  </g>
+
+  <!-- Connections -->
+  <g>
+    <path d="M 270 290 L 420 290" class="arrow-line" id="conn1" />
+    <path d="M 780 190 L 900 190" class="arrow-line one-way" id="conn2" />
+    <path d="M 1030 280 L 1030 300" class="arrow-line" id="conn3" />
+    <path d="M 450 600 L 160 600 L 160 430" class="arrow-line one-way" id="conn4" />
+  </g>
+
+  <!-- Text Labels -->
+  <text x="160" y="185" text-anchor="middle" class="heading">Claude Desktop</text>
+  
+  <text x="600" y="115" text-anchor="middle" class="heading">Gemini MCP Server</text>
+  <g class="tool-text" text-anchor="middle">
+    <text x="600" y="165">Chat + Deep Research</text>
+    <text x="600" y="255">Image (Nano Banana Pro)</text>
+    <text x="600" y="345">Video (Veo 3.1)</text>
+    <text x="600" y="445">SVG + Landing Page</text>
+  </g>
+
+  <text x="1030" y="195" text-anchor="middle" class="heading">Google Gemini API</text>
+  <text x="1030" y="335" text-anchor="middle" style="font-size: 14px;">Google Search grounding</text>
+  
+  <text x="600" y="590" text-anchor="middle" class="heading">Media server</text>
+  <text x="600" y="615" text-anchor="middle" class="label">(127.0.0.1)</text>
+
+  <!-- Arrow Labels -->
+  <text x="345" y="280" text-anchor="middle" class="label">stdio / JSON-RPC</text>
+  <text x="840" y="180" text-anchor="middle" class="label">HTTPS</text>
+  <text x="300" y="585" text-anchor="middle" class="label">Inline viewers (MCP Apps)</text>
+
+  <!-- Link from server to media -->
+  <path d="M 600 500 L 600 560" stroke="#94a3b8" stroke-width="2" stroke-dasharray="2" fill="none" />
+</svg>
