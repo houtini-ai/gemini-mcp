@@ -99,7 +99,7 @@ function buildStructuredContent(
 
   return {
     imageUrl: imageUrl ?? undefined,
-    mimeType: 'image/jpeg',
+    mimeType: processed?.savedMimeType ?? 'image/png',
     savedPath: processed?.savedPath,
     previewPath: processed?.previewPath,
     description,

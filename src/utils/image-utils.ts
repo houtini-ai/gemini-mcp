@@ -1,12 +1,80 @@
 import { writeFile, mkdir } from 'fs/promises';
-import { dirname, resolve } from 'path';
+import { dirname, resolve, extname } from 'path';
+import sharp from 'sharp';
 import logger from './logger.js';
 import { resizeForTransport } from './image-compress.js';
 
+type ImageFormat = 'png' | 'jpeg' | 'webp';
+
+const EXT_TO_FORMAT: Record<string, ImageFormat> = {
+  '.png': 'png',
+  '.jpg': 'jpeg',
+  '.jpeg': 'jpeg',
+  '.webp': 'webp',
+};
+
+const FORMAT_TO_MIME: Record<ImageFormat, string> = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+};
+
+/**
+ * The image MIME type implied by a file path's extension. Falls back to
+ * image/png for anything we don't recognise (matching the default save path).
+ */
+export function mimeTypeForPath(path: string): string {
+  const format = EXT_TO_FORMAT[extname(path).toLowerCase()];
+  return format ? FORMAT_TO_MIME[format] : 'image/png';
+}
+
+/**
+ * Detect the real image format from the buffer's magic bytes, so a mislabelled
+ * or optimistic mime type can't make us write the wrong codec.
+ */
+function detectFormat(buf: Buffer): ImageFormat | 'unknown' {
+  if (buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'png';
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpeg';
+  if (buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return 'webp';
+  return 'unknown';
+}
+
+/**
+ * Save generated image bytes to disk, transcoding so the file's contents always
+ * match its extension.
+ *
+ * Gemini picks its own output codec and often returns JPEG bytes even when the
+ * caller asked for a `.png` path. Writing those bytes verbatim produced a file
+ * whose contents didn't match its name (a JPEG called `.png`), which breaks any
+ * tool that trusts the extension. So when the requested extension and the actual
+ * bytes disagree we re-encode to the requested format; when they already match
+ * (e.g. a `.jpg` path for JPEG bytes) we write the original bytes untouched.
+ */
 export async function saveImageToFile(base64Data: string, outputPath: string): Promise<string> {
   const absolutePath = resolve(outputPath);
   await mkdir(dirname(absolutePath), { recursive: true });
-  await writeFile(absolutePath, Buffer.from(base64Data, 'base64'));
+
+  const buffer = Buffer.from(base64Data, 'base64');
+  const targetFormat = EXT_TO_FORMAT[extname(absolutePath).toLowerCase()];
+  const actualFormat = detectFormat(buffer);
+
+  if (targetFormat && actualFormat !== 'unknown' && actualFormat !== targetFormat) {
+    let pipeline = sharp(buffer);
+    if (targetFormat === 'png') pipeline = pipeline.png();
+    else if (targetFormat === 'jpeg') pipeline = pipeline.jpeg({ quality: 95, mozjpeg: true });
+    else pipeline = pipeline.webp({ quality: 95 });
+
+    const converted = await pipeline.toBuffer();
+    await writeFile(absolutePath, converted);
+    logger.info('Transcoded generated image to match requested extension', {
+      path: absolutePath,
+      requested: targetFormat,
+      modelReturned: actualFormat,
+    });
+    return absolutePath;
+  }
+
+  await writeFile(absolutePath, buffer);
   return absolutePath;
 }
 
@@ -248,6 +316,8 @@ export async function createImagePreviewHtml(
 
 export interface ProcessedImage {
   savedPath: string;
+  /** MIME type of the full-resolution file on disk, matching its extension. */
+  savedMimeType: string;
   previewPath: string;
   /** Base64-encoded resized JPEG preview for inline transport */
   previewBase64: string;
@@ -290,6 +360,7 @@ export async function processGeneratedImage(
 
   return {
     savedPath,
+    savedMimeType: mimeTypeForPath(savedPath),
     previewPath,
     previewBase64: resized.base64,
     previewMimeType: resized.mimeType,
