@@ -75,7 +75,9 @@ Everything below came out of the tools in this repo, unretouched, on the afterno
 
 **Step 1: Get a Gemini API key**
 
-Go to [Google AI Studio](https://aistudio.google.com/apikey) and create one. The free tier covers most development use. You'll hit rate limits on deep research if you hammer it, but for day-to-day work it's fine.
+Go to [Google AI Studio](https://aistudio.google.com/apikey) and create one.
+
+A word on the free tier, because the defaults lean on a paid model. Google's [pricing page](https://ai.google.dev/gemini-api/docs/pricing) (as of 24 September 2026) gives Gemini 3 Flash Preview a free tier, but Gemini 3.1 Pro Preview is paid-only - and 3.1 Pro is the default for `gemini_chat`, `gemini_deep_research` (synthesis), `analyze_image` and `generate_landing_page`. On a free key those calls will fail unless you point them at a free model: set `GEMINI_DEFAULT_MODEL=gemini-3-flash-preview` (covers chat and landing pages), `GEMINI_DEEP_RESEARCH_MODEL` and `GEMINI_IMAGE_ANALYSIS_MODEL` likewise, or pass `model` per call. `generate_svg` already defaults to `gemini-3-flash-preview`. Check the pricing page for the other models before relying on them - Google changes these tiers.
 
 **Step 2: Add to your Claude Desktop config**
 
@@ -231,6 +233,8 @@ Four styles:
 
 You get real SVG code back. Edit it, animate it, embed it, commit it. No export step, no Figma.
 
+Runs on `gemini-3-flash-preview` unless you pass `model` - it's quick, it handles SVG markup comfortably, and it has a free tier. Pass `model: "gemini-3.1-pro-preview"` for denser diagrams if you're on a paid key.
+
 ### Image editing and analysis
 
 **Conversational editing.** Nano Banana Pro keeps context between turns. Pass the thought signature from the previous call back in and it remembers what it was working on:
@@ -376,8 +380,9 @@ Checked against the live models API on 22 September 2026. `gemini_list_models` w
 
 | Model | Used by | Notes |
 |-------|---------|-------|
-| `gemini-3.1-pro-preview` | `gemini_chat`, `gemini_deep_research` (synthesis), `analyze_image` | Default. Still the strongest reasoning model Google ships, preview label or not |
+| `gemini-3.1-pro-preview` | `gemini_chat`, `gemini_deep_research` (synthesis), `analyze_image`, `generate_landing_page` | Default. Still the strongest reasoning model Google ships, preview label or not. Paid-only - no free tier |
 | `gemini-3.8-flash` | `describe_image`, `gemini_deep_research` (search passes) | Default. Google's GA workhorse as of September 2026; a good `gemini_chat` choice when you want speed |
+| `gemini-3-flash-preview` | `generate_svg` | Default. Has a free tier (Google pricing page, 24 September 2026) |
 | `gemini-3.7-flash`, `3.6`, `3.5`, `3.5-flash-lite`, `3.1-flash-lite` | any text tool | Earlier GA Flash releases, all accepted |
 | `gemini-3-pro-image` | `generate_image`, `edit_image` | Default. Nano Banana Pro, GA. 4K, real text, conversational editing |
 | `gemini-3.1-flash-image` | `generate_image`, `edit_image` | Nano Banana 2, GA. Near-Pro quality, Flash speed and price |

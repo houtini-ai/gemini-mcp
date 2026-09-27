@@ -10,6 +10,11 @@ export interface GenerateSVGRequest {
   model?: string;
 }
 
+// Flash, not Pro: SVG markup is well within Flash's reach, and Gemini 3 Flash
+// Preview has a free tier where 3.1 Pro Preview is paid-only. register-svg.ts
+// reads this constant for the tool description, so the two can't drift again.
+export const DEFAULT_SVG_MODEL = 'gemini-3-flash-preview';
+
 const SYSTEM_PROMPT = `You are an expert SVG developer specializing in creating clean, SIMPLE, scalable vector graphics.
 Generate complete, valid SVG code that is self-contained and production-ready.
 
@@ -89,7 +94,7 @@ Remember: Elegant simplicity beats complex over-engineering. Fewer elements, cle
       const result = await this.geminiService.chat({
         message: prompt,
         systemPrompt: SYSTEM_PROMPT,
-        model: request.model || 'gemini-3-flash-preview',
+        model: request.model || DEFAULT_SVG_MODEL,
         // No maxTokens: inherit the model's full output headroom — a cap costs
         // nothing unused, and 8192 was starved by Gemini 3 thinking.
         grounding: false,

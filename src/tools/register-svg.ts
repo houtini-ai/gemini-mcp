@@ -6,7 +6,7 @@ import logger from '../utils/logger.js';
 import { McpError, createToolResult } from '../utils/error-handler.js';
 import { savedFileMessage } from '../utils/tool-wrapper.js';
 import { stashViewerPayload, viewerRefLine } from '../utils/viewer-payload-store.js';
-import { GenerateSVGTool } from './generate-svg.js';
+import { GenerateSVGTool, DEFAULT_SVG_MODEL } from './generate-svg.js';
 import type { ToolContext } from './types.js';
 
 export function register(ctx: ToolContext): void {
@@ -38,8 +38,8 @@ export function register(ctx: ToolContext): void {
         model: z.string()
           .optional()
           .describe(
-            'Omit to use gemini-3.1-pro-preview. ' +
-            'Other valid options: gemini-3-pro-preview, gemini-3-flash-preview.'
+            `Omit to use ${DEFAULT_SVG_MODEL}. ` +
+            'Other valid options: gemini-3.8-flash, gemini-3.1-pro-preview, gemini-3-pro-preview.'
           ),
         outputPath: z.string()
           .optional()
