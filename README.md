@@ -401,7 +401,7 @@ Checked against the live models API on 22 September 2026. `gemini_list_models` w
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 20.19+
 - A Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
 - ffmpeg (optional, for video thumbnails)
 
