@@ -15,6 +15,7 @@
     "url": "https://github.com/houtini-ai/gemini-mcp",
     "source": "github"
   },
+  "websiteUrl": "https://houtini.com/gemini-mcp/",
   "version": "2.9.0",
   "packages": [
     {
