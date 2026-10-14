@@ -435,7 +435,8 @@ what your key can see today.
 ## Chat Models
 
 **Gemini 3.x Pro (preview - strongest reasoning)**
-• gemini-3.1-pro-preview - Default for gemini_chat, gemini_deep_research, analyze_image
+• gemini-4-argon - Default for gemini_chat and generate_landing_page (Gemini 4 flagship)
+• gemini-3.1-pro-preview - Default for gemini_deep_research (synthesis) and analyze_image
 • gemini-3.1-pro-preview-customtools - Tool-use tuned variant
 • gemini-3-pro-preview - Previous Pro preview
 

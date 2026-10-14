@@ -11,7 +11,7 @@
 
 I've had this Gemini MCP server running in my Claude Desktop setup for the best part of a year now. It's one of the few I leave switched on permanently. Not because Gemini replaces Claude (it doesn't), but because grounded search, image generation, SVG diagrams and video are things Gemini happens to do well, and having them as tools inside Claude beats flipping between browser tabs.
 
-Fourteen tools, built around the models people actually come looking for: **Nano Banana Pro** (`gemini-3-pro-image`) and **Nano Banana 2** for images, **Veo 3.1** for video with synchronised audio, and **Gemini 3.1 Pro** for chat and deep research with Google Search grounding. Everything previews inline in Claude Desktop through MCP Apps rather than landing as a file path you have to go and open.
+Fourteen tools, built around the models people actually come looking for: **Nano Banana Pro** (`gemini-3-pro-image`) and **Nano Banana 2** for images, **Veo 3.1** for video with synchronised audio, **Gemini 4 Argon** for chat and **Gemini 3.1 Pro** for deep research, both with Google Search grounding. Everything previews inline in Claude Desktop through MCP Apps rather than landing as a file path you have to go and open.
 
 One `npx` command. That's it.
 
@@ -77,7 +77,7 @@ Everything below came out of the tools in this repo, unretouched, on the afterno
 
 Go to [Google AI Studio](https://aistudio.google.com/apikey) and create one.
 
-A word on the free tier, because the defaults lean on a paid model. Google's [pricing page](https://ai.google.dev/gemini-api/docs/pricing) (as of 24 September 2026) gives Gemini 3 Flash Preview a free tier, but Gemini 3.1 Pro Preview is paid-only - and 3.1 Pro is the default for `gemini_chat`, `gemini_deep_research` (synthesis), `analyze_image` and `generate_landing_page`. On a free key those calls will fail unless you point them at a free model: set `GEMINI_DEFAULT_MODEL=gemini-3-flash-preview` (covers chat and landing pages), `GEMINI_DEEP_RESEARCH_MODEL` and `GEMINI_IMAGE_ANALYSIS_MODEL` likewise, or pass `model` per call. `generate_svg` already defaults to `gemini-3-flash-preview`. Check the pricing page for the other models before relying on them - Google changes these tiers.
+A word on the free tier, because the defaults lean on a paid model. Google's [pricing page](https://ai.google.dev/gemini-api/docs/pricing) gives Gemini 3 Flash Preview a free tier, but the flagship models are paid-only - and `gemini-4-argon` is the default for `gemini_chat` and `generate_landing_page`, with `gemini-3.1-pro-preview` the default for `gemini_deep_research` (synthesis) and `analyze_image`. On a free key those calls will fail unless you point them at a free model: set `GEMINI_DEFAULT_MODEL=gemini-3-flash-preview` (covers chat and landing pages), `GEMINI_DEEP_RESEARCH_MODEL` and `GEMINI_IMAGE_ANALYSIS_MODEL` likewise, or pass `model` per call. `generate_svg` already defaults to `gemini-3-flash-preview`. Check the pricing page for the other models before relying on them - Google changes these tiers.
 
 **Step 2: Add to your Claude Desktop config**
 
@@ -162,7 +162,7 @@ Use gemini:gemini_chat to ask: "What changed in the MCP spec in the last month?"
 
 Grounding is on by default. Gemini searches Google before it answers, so you get this month's information rather than a training-cutoff guess, and the sources come back as markdown links. For questions where you want pure reasoning ("explain this code", that sort of thing) set `grounding: false`.
 
-Runs on `gemini-3.1-pro-preview` unless you say otherwise. Pass `model: "gemini-3.8-flash"` if you'd rather have speed than depth. `thinking_level` works on every Gemini 3.x model: `high` for the hard stuff, `low` to keep it snappy.
+Runs on `gemini-4-argon` (Gemini 4 Argon) unless you say otherwise. Pass `model: "gemini-3.8-flash"` if you'd rather have speed than depth, or `model: "gemini-3.1-pro-preview"` for the previous flagship. `thinking_level` works on Gemini 3.x and 4 models: `high` for the hard stuff, `low` to keep it snappy.
 
 ### Deep research
 
@@ -339,7 +339,7 @@ Image, SVG, video and landing-page results each open in an MCP App viewer with z
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `GEMINI_API_KEY` | Yes | - | Google AI API key from [AI Studio](https://aistudio.google.com/apikey) |
-| `GEMINI_DEFAULT_MODEL` | No | `gemini-3.1-pro-preview` | Model for `gemini_chat` |
+| `GEMINI_DEFAULT_MODEL` | No | `gemini-4-argon` | Model for `gemini_chat` and `generate_landing_page` |
 | `GEMINI_DEEP_RESEARCH_MODEL` | No | `gemini-3.1-pro-preview` | Synthesis model for `gemini_deep_research` |
 | `GEMINI_DEEP_RESEARCH_SEARCH_MODEL` | No | `gemini-3.8-flash` | Model for the grounded search passes in `gemini_deep_research` |
 | `GEMINI_IMAGE_ANALYSIS_MODEL` | No | `gemini-3.1-pro-preview` | Model for `analyze_image` |
@@ -357,7 +357,7 @@ Image, SVG, video and landing-page results each open in an MCP App viewer with z
 
 | Tool | Description |
 |------|-------------|
-| `gemini_chat` | Chat with Gemini 3.1 Pro. Google Search grounding on by default. Supports `thinking_level` |
+| `gemini_chat` | Chat with Gemini 4 Argon. Google Search grounding on by default. Supports `thinking_level` |
 | `gemini_deep_research` | Grounded search passes on Flash, synthesised into a report by 3.1 Pro. Default 2 passes |
 | `gemini_list_models` | Lists the models your API key can see, live |
 | `gemini_help` | Documentation for every tool without leaving Claude |
@@ -380,7 +380,8 @@ Checked against the live models API on 22 September 2026. `gemini_list_models` w
 
 | Model | Used by | Notes |
 |-------|---------|-------|
-| `gemini-3.1-pro-preview` | `gemini_chat`, `gemini_deep_research` (synthesis), `analyze_image`, `generate_landing_page` | Default. Still the strongest reasoning model Google ships, preview label or not. Paid-only - no free tier |
+| `gemini-4-argon` | `gemini_chat`, `generate_landing_page` | Default. Gemini 4 Argon - the current flagship. Paid-only - no free tier |
+| `gemini-3.1-pro-preview` | `gemini_deep_research` (synthesis), `analyze_image` | Default for those two. Strong reasoning, paid-only - no free tier |
 | `gemini-3.8-flash` | `describe_image`, `gemini_deep_research` (search passes) | Default. Google's GA workhorse as of September 2026; a good `gemini_chat` choice when you want speed |
 | `gemini-3-flash-preview` | `generate_svg` | Default. Has a free tier (Google pricing page, 24 September 2026) |
 | `gemini-3.7-flash`, `3.6`, `3.5`, `3.5-flash-lite`, `3.1-flash-lite` | any text tool | Earlier GA Flash releases, all accepted |

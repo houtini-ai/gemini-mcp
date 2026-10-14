@@ -35,7 +35,7 @@ export const config: Config = {
         threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       }
     ],
-    defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-3.1-pro-preview',                // chat / text
+    defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-4-argon',                        // chat / text (Gemini 4 Argon)
     defaultDeepResearchModel: process.env.GEMINI_DEEP_RESEARCH_MODEL || 'gemini-3.1-pro-preview',  // deep_research synthesis
     // The grounded search passes only gather facts, so they run on the fast GA
     // Flash model with low thinking; Pro + high thinking is saved for synthesis.

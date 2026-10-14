@@ -18,7 +18,7 @@ export function register(ctx: ToolContext): void {
       // timeout rather than as the cap it actually is.
       description:
         'Chat with Google Gemini models. Grounded in Google Search by default, ' +
-        'on gemini-3.1-pro-preview. ' +
+        'on gemini-4-argon (Gemini 4 Argon). ' +
         'DO NOT SET max_tokens - the server allocates the model\'s full output ' +
         'ceiling automatically. It is a cap, not consumption, so unused headroom ' +
         'costs nothing; setting a small one makes Gemini 3 thinking burn the whole ' +
@@ -29,8 +29,8 @@ export function register(ctx: ToolContext): void {
         model: z.string()
           .optional()
           .describe(
-            'Omit to use the configured default (gemini-3.1-pro-preview). ' +
-            'Other valid options: gemini-3.8-flash (GA, fast), gemini-3.5-flash, gemini-3-pro-preview, gemini-3-flash-preview. ' +
+            'Omit to use the configured default (gemini-4-argon). ' +
+            'Other valid options: gemini-3.1-pro-preview, gemini-3.8-flash (GA, fast), gemini-3.5-flash, gemini-3-pro-preview. ' +
             'Do NOT pass gemini-1.5-* or gemini-pro — those are out of support.'
           ),
         temperature: z.number()
