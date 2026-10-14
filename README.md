@@ -15,6 +15,8 @@ Fourteen tools, built around the models people actually come looking for: **Nano
 
 One `npx` command. That's it.
 
+New here? The [full user guide](https://github.com/houtini-ai/gemini-mcp/blob/main/docs/user-guide.md) walks through every tool, the free-tier gotcha, and what to do when something breaks.
+
 <p align="center">
   <a href="https://glama.ai/mcp/servers/@houtini-ai/gemini-mcp">
     <img width="380" height="200" src="https://glama.ai/mcp/servers/@houtini-ai/gemini-mcp/badge" alt="Gemini MCP server" />
