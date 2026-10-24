@@ -16,12 +16,12 @@
     "source": "github"
   },
   "websiteUrl": "https://houtini.com/gemini-mcp/",
-  "version": "2.10.0",
+  "version": "2.10.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@houtini/gemini-mcp",
-      "version": "2.10.0",
+      "version": "2.10.1",
       "transport": {
         "type": "stdio"
       },
