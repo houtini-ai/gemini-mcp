@@ -1,4 +1,6 @@
 <div align="center">
+
+[![Socket Badge](https://socket.dev/api/badge/npm/package/@houtini/gemini-mcp)](https://socket.dev/npm/package/@houtini/gemini-mcp)
   <img src="https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/assets/logo.png" width="120" height="120" alt="Gemini MCP" />
 </div>
 
