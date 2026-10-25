@@ -1,6 +1,4 @@
 <div align="center">
-
-[![Socket Badge](https://socket.dev/api/badge/npm/package/@houtini/gemini-mcp)](https://socket.dev/npm/package/@houtini/gemini-mcp)
   <img src="https://raw.githubusercontent.com/houtini-ai/gemini-mcp/main/assets/logo.png" width="120" height="120" alt="Gemini MCP" />
 </div>
 
@@ -9,6 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/@houtini/gemini-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@houtini/gemini-mcp)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?style=flat-square)](https://registry.modelcontextprotocol.io)
 [![Known Vulnerabilities](https://snyk.io/test/github/houtini-ai/gemini-mcp/badge.svg)](https://snyk.io/test/github/houtini-ai/gemini-mcp)
+[![Socket Badge](https://socket.dev/api/badge/npm/package/@houtini/gemini-mcp)](https://socket.dev/npm/package/@houtini/gemini-mcp)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
 
 I've had this Gemini MCP server running in my Claude Desktop setup for the best part of a year now. It's one of the few I leave switched on permanently. Not because Gemini replaces Claude (it doesn't), but because grounded search, image generation, SVG diagrams and video are things Gemini happens to do well, and having them as tools inside Claude beats flipping between browser tabs.
